@@ -1,0 +1,6 @@
+{
+  "name": "EduPlatform",
+  "description": "Zamonaviy ta'lim platformasi: kurslar, interaktiv testlar, AI yordamchi va administrator boshqaruvi tizimi.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
