@@ -227,7 +227,7 @@ export const AiAssistantView: React.FC = () => {
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            placeholder="AI dan biror narsa so'rang (masalan: React, Python yoki IELTS haqida)..."
+            placeholder="Sun'iy intellektdan savol so'rang (Python, Neyrotarmoqlar yoki Prompt)..."
             className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <button

@@ -15,6 +15,8 @@ import {
   HelpCircle,
   Sparkles,
   ShieldCheck,
+  Download,
+  Share2,
 } from 'lucide-react';
 
 export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
@@ -23,7 +25,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
   const { currentUser } = useAuth();
   const { quizzes } = useCourses();
 
-  const isLocked = currentUser?.status === 'pending';
+  const isLocked = !currentUser || currentUser.status === 'pending' || currentUser.status === 'rejected';
 
   // Active quiz runner state
   const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null);
@@ -31,6 +33,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [showCertificate, setShowCertificate] = useState(false);
 
   useEffect(() => {
     if (!activeQuiz || isSubmitted) return;
@@ -51,34 +54,57 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
     return () => clearInterval(timer);
   }, [activeQuiz, isSubmitted]);
 
-  // If status is 'pending', show Admin Approval Lock!
+  // If status is 'pending' or 'rejected', show Admin Approval Lock!
   if (isLocked) {
     return (
-      <div id="tests-locked-container" className="max-w-4xl mx-auto py-12 px-4 text-center">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 sm:p-12 border border-amber-200 dark:border-amber-900/50 shadow-xl relative overflow-hidden">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 mb-6 shadow-inner ring-8 ring-amber-50 dark:ring-amber-950/20">
+      <div id="tests-locked-container" className="max-w-4xl mx-auto py-10 px-4 text-center">
+        <div className="bg-slate-900/90 backdrop-blur-2xl rounded-3xl p-8 sm:p-12 border border-amber-500/30 shadow-2xl relative overflow-hidden text-white">
+          <div className="absolute -top-16 -right-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          {/* Locked Icon Badge */}
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-amber-500/10 text-amber-400 mb-6 shadow-inner ring-8 ring-amber-500/10 border border-amber-500/30">
             <Lock className="w-10 h-10" />
           </div>
 
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300/60 dark:border-amber-800 mb-4">
-            <Clock className="w-3.5 h-3.5 animate-pulse text-amber-600" />
-            <span>Holatingiz: Kutilmoqda (Pending Approval)</span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/40 mb-4">
+            <Clock className="w-3.5 h-3.5 animate-pulse text-amber-400" />
+            <span>Holat: Admin Tasdig'i Kutilmoqda (Pending Approval)</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
             Interaktiv Testlar Bo'limi Qulflangan
           </h1>
 
-          <p className="mt-3 text-slate-600 dark:text-slate-400 max-w-lg mx-auto text-sm sm:text-base leading-relaxed">
-            Talaba <strong className="text-slate-900 dark:text-white">{currentUser?.firstName} {currentUser?.lastName}</strong>,
-            testlar va sertifikat olish tizimi faqat administrator tomonidan
-            tasdiqlangan foydalanuvchilar uchun ochiq.
+          <p className="mt-3 text-slate-300 max-w-lg mx-auto text-sm leading-relaxed">
+            Hurmatli <strong className="text-cyan-300">{currentUser?.firstName || 'Talaba'} {currentUser?.lastName || ''}</strong>,
+            test topshirish va rasmiy AI Future sertifikatini qo'lga kiritish faqat administrator tomonidan tasdiqlangan talabalarga taqdim etiladi.
           </p>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <div className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm font-medium">
-              <Clock className="w-4 h-4 animate-spin text-amber-600" />
-              <span>Testlar bo'limi sizning arizangiz administrator tomonidan tasdiqlanganidan so'ng ochiladi.</span>
+          {/* User Details Box */}
+          <div className="mt-6 max-w-md mx-auto p-4 rounded-2xl bg-slate-950/70 border border-slate-800 text-left space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-400">Talaba:</span>
+              <span className="font-semibold text-white">{currentUser?.firstName} {currentUser?.lastName}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-400">Telefon:</span>
+              <span className="font-mono text-cyan-300">{currentUser?.phoneNumber || 'Kiritilmagan'}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-400">Holat:</span>
+              <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                Arizangiz kutilmoqda
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <div className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-medium max-w-lg">
+              <Clock className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
+              <span>
+                Administrator arizangizni tasdiqlagan zahoti testlar tizimi to'liq ochiladi.
+              </span>
             </div>
           </div>
         </div>
@@ -91,6 +117,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
     setCurrentQuestionIndex(0);
     setSelectedAnswers({});
     setIsSubmitted(false);
+    setShowCertificate(false);
   };
 
   const handleSelectOption = (questionId: string, optionIndex: number) => {
@@ -127,10 +154,10 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
         <>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
             <div>
-              <div className="flex items-center gap-2 text-xs font-mono text-indigo-600 dark:text-indigo-400 mb-1">
+              <div className="flex items-center gap-2 text-xs font-mono text-cyan-600 dark:text-cyan-400 mb-1">
                 <span>app</span>
                 <span>/</span>
-                <span className="font-semibold bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-200/60 dark:border-indigo-800/60">
+                <span className="font-semibold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
                   /interactive-tests
                 </span>
               </div>
@@ -153,10 +180,10 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
               >
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300">
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
                       {quiz.category}
                     </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 font-mono">
                       <Clock className="w-3.5 h-3.5" />
                       {quiz.durationMinutes} daqiqa
                     </span>
@@ -170,8 +197,8 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                   </p>
 
                   <div className="mt-4 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-                    <span>Savollar: {quiz.questionsCount} ta</span>
-                    <span>Qiyinlik darajasi: <strong>{quiz.difficulty}</strong></span>
+                    <span>Savollar: <strong>{quiz.questionsCount} ta</strong></span>
+                    <span>Daraja: <strong>{quiz.difficulty}</strong></span>
                   </div>
                 </div>
 
@@ -179,7 +206,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                   <button
                     id={`start-quiz-btn-${quiz.id}`}
                     onClick={() => startQuiz(quiz)}
-                    className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-semibold shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>Testni Boshlash</span>
                     <ArrowRight className="w-4 h-4" />
@@ -197,7 +224,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
           {/* Runner Top Bar */}
           <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
-              <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase">
+              <span className="text-xs font-semibold text-cyan-500 uppercase tracking-wider">
                 {activeQuiz.category}
               </span>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -210,8 +237,8 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
               <div
                 className={`px-3.5 py-1.5 rounded-xl font-mono text-xs font-bold flex items-center gap-1.5 ${
                   timeLeft < 60
-                    ? 'bg-rose-100 text-rose-700 animate-pulse'
-                    : 'bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300'
+                    ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse'
+                    : 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20'
                 }`}
               >
                 <Clock className="w-4 h-4" />
@@ -219,107 +246,108 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
               </div>
 
               <button
-                onClick={() => setActiveQuiz(null)}
-                className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 underline"
+                onClick={() => {
+                  if (window.confirm("Testdan chiqishni xohlaysizmi? Natijalar saqlanmaydi.")) {
+                    setActiveQuiz(null);
+                  }
+                }}
+                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-white"
               >
                 Chiqish
               </button>
             </div>
           </div>
 
+          {/* Quiz Question Body */}
           {!isSubmitted ? (
-            /* Questions in progress */
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-              {/* Progress Indicator */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <span>Savol: {currentQuestionIndex + 1} / {activeQuiz.questions.length}</span>
-                  <span>Javob berilgan: {Object.keys(selectedAnswers).length} / {activeQuiz.questions.length}</span>
-                </div>
-                <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-indigo-600 transition-all duration-300"
-                    style={{
-                      width: `${((currentQuestionIndex + 1) / activeQuiz.questions.length) * 100}%`,
-                    }}
-                  />
-                </div>
+            <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+              {/* Question progress */}
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span>
+                  Savol <strong>{currentQuestionIndex + 1}</strong> / {activeQuiz.questions.length}
+                </span>
+                <span>
+                  Javob berildi: {Object.keys(selectedAnswers).length} ta
+                </span>
               </div>
 
-              {/* Current Question */}
-              {(() => {
-                const question = activeQuiz.questions[currentQuestionIndex];
-                return (
-                  <div className="space-y-4">
-                    <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
-                      {currentQuestionIndex + 1}. {question.question}
-                    </h3>
+              {/* Question text */}
+              {activeQuiz.questions[currentQuestionIndex] && (
+                <div className="space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white leading-relaxed">
+                    {currentQuestionIndex + 1}. {activeQuiz.questions[currentQuestionIndex].question}
+                  </h3>
 
-                    {/* Options */}
-                    <div className="space-y-2.5">
-                      {question.options.map((option, idx) => {
-                        const isSelected = selectedAnswers[question.id] === idx;
-                        return (
-                          <button
-                            key={idx}
-                            id={`option-btn-${question.id}-${idx}`}
-                            onClick={() => handleSelectOption(question.id, idx)}
-                            className={`w-full text-left p-4 rounded-xl border text-sm transition-all flex items-center justify-between ${
-                              isSelected
-                                ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-950 dark:text-indigo-200 font-medium'
-                                : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300'
-                            }`}
-                          >
-                            <span>{option}</span>
-                            <div
-                              className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ml-3 ${
+                  {/* Options */}
+                  <div className="space-y-2.5 pt-2">
+                    {activeQuiz.questions[currentQuestionIndex].options.map((opt, idx) => {
+                      const qId = activeQuiz.questions[currentQuestionIndex].id;
+                      const isSelected = selectedAnswers[qId] === idx;
+
+                      return (
+                        <button
+                          key={idx}
+                          id={`quiz-option-${idx}`}
+                          onClick={() => handleSelectOption(qId, idx)}
+                          className={`w-full p-4 rounded-xl border text-left text-xs sm:text-sm font-medium transition-all flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300 ring-2 ring-cyan-500/30 font-semibold'
+                              : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span
+                              className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-mono font-bold ${
                                 isSelected
-                                  ? 'border-indigo-600 bg-indigo-600 text-white'
-                                  : 'border-slate-300 dark:border-slate-700'
+                                  ? 'bg-cyan-500 text-slate-950'
+                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                               }`}
                             >
-                              {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
+                              {String.fromCharCode(65 + idx)}
+                            </span>
+                            <span>{opt}</span>
+                          </div>
+                          {isSelected && <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />}
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })()}
+                </div>
+              )}
 
               {/* Navigation buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between pt-6 border-t border-slate-100 dark:border-slate-800">
                 <button
-                  disabled={currentQuestionIndex === 0}
                   onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
-                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 disabled:opacity-40"
+                  disabled={currentQuestionIndex === 0}
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium text-slate-600 dark:text-slate-400 disabled:opacity-40"
                 >
-                  Oldingi savol
+                  Oldingisi
                 </button>
 
                 {currentQuestionIndex < activeQuiz.questions.length - 1 ? (
                   <button
                     onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
-                    className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-all"
+                    className="px-5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                   >
-                    Keyingi savol
+                    <span>Keyingisi</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
                   <button
                     id="submit-quiz-btn"
                     onClick={() => setIsSubmitted(true)}
-                    className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all flex items-center gap-2"
+                    className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5 cursor-pointer"
                   >
+                    <CheckSquare className="w-4 h-4" />
                     <span>Testni Yakunlash</span>
-                    <CheckCircle2 className="w-4 h-4" />
                   </button>
                 )}
               </div>
             </div>
           ) : (
-            /* Results Scorecard */
-            <div id="quiz-results-card" className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 text-center">
+            /* Results Scorecard & Certificate */
+            <div id="quiz-results-card" className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 text-center">
               {(() => {
                 const { correct, total, percentage } = calculateScore();
                 const isPassed = percentage >= 60;
@@ -328,14 +356,16 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                   <div>
                     <div
                       className={`w-20 h-20 rounded-3xl mx-auto flex items-center justify-center mb-4 ${
-                        isPassed ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
+                        isPassed
+                          ? 'bg-emerald-500/10 text-emerald-400 ring-8 ring-emerald-500/10 border border-emerald-500/30'
+                          : 'bg-rose-500/10 text-rose-400 ring-8 ring-rose-500/10 border border-rose-500/30'
                       }`}
                     >
                       <Award className="w-10 h-10" />
                     </div>
 
                     <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
-                      {isPassed ? 'Tabriklaymiz! Testdan o\'tdingiz' : 'Qayta urinib ko\'ring'}
+                      {isPassed ? "Tabriklaymiz! Test Muvaffaqiyatli Topshirildi" : "Qayta Urinib Ko'ring"}
                     </h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                       Siz {total} ta savoldan {correct} tasiga to'g'ri javob berdingiz.
@@ -343,7 +373,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
 
                     <div className="mt-6 inline-flex items-center gap-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
                       <div>
-                        <span className="block text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                        <span className="block text-2xl font-black text-cyan-500">
                           {percentage}%
                         </span>
                         <span className="text-[11px] text-slate-400 uppercase font-semibold">
@@ -361,6 +391,42 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                       </div>
                     </div>
 
+                    {/* Official Certificate Card (If Passed) */}
+                    {isPassed && (
+                      <div className="mt-8 p-6 rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 border border-cyan-500/40 shadow-2xl text-left relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                          <Award className="w-48 h-48 text-cyan-400" />
+                        </div>
+
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-5 h-5 text-cyan-400" />
+                            <span className="font-bold text-sm text-white uppercase tracking-wider">
+                              AI Future • Rasmiy Elektron Sertifikat
+                            </span>
+                          </div>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            TASDIQLANGAN
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <p className="text-xs text-slate-400">Ushbu sertifikat quyidagi talabaga topshiriladi:</p>
+                          <h4 className="text-xl font-bold text-cyan-300">
+                            {currentUser?.firstName} {currentUser?.lastName}
+                          </h4>
+                          <p className="text-xs text-slate-300 pt-2">
+                            <strong>{activeQuiz.title}</strong> kursi bo'yicha yakuniy bilim sinovini <strong>{percentage}%</strong> natija bilan muvaffaqiyatli tamomlaganligi tasdiqlanadi.
+                          </p>
+                        </div>
+
+                        <div className="mt-5 pt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
+                          <span>Sertifikat ID: AIF-{Math.floor(100000 + Math.random() * 900000)}</span>
+                          <span>Sana: {new Date().toLocaleDateString('uz-UZ')}</span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Explanations Accordion */}
                     <div className="mt-8 text-left space-y-4">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -377,25 +443,25 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                               key={q.id}
                               className={`p-4 rounded-xl border text-xs space-y-2 ${
                                 isCorrect
-                                  ? 'border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/20'
-                                  : 'border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20'
+                                  ? 'border-emerald-500/30 bg-emerald-950/20 text-slate-200'
+                                  : 'border-rose-500/30 bg-rose-950/20 text-slate-200'
                               }`}
                             >
                               <div className="flex items-start justify-between gap-2">
-                                <span className="font-semibold text-slate-900 dark:text-white">
+                                <span className="font-semibold text-white">
                                   {idx + 1}. {q.question}
                                 </span>
                                 {isCorrect ? (
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                                 ) : (
-                                  <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                                  <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                                 )}
                               </div>
 
-                              <p className="text-slate-600 dark:text-slate-300">
+                              <p className="text-slate-300">
                                 <strong>To'g'ri javob:</strong> {q.options[q.correctIndex]}
                               </p>
-                              <p className="text-slate-500 dark:text-slate-400 italic">
+                              <p className="text-slate-400 italic">
                                 💡 {q.explanation}
                               </p>
                             </div>
@@ -407,14 +473,14 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                     <div className="mt-8 flex justify-center gap-3">
                       <button
                         onClick={() => startQuiz(activeQuiz)}
-                        className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                        className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2 cursor-pointer"
                       >
                         <RotateCcw className="w-4 h-4" />
                         <span>Qayta topshirish</span>
                       </button>
                       <button
                         onClick={() => setActiveQuiz(null)}
-                        className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
+                        className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold cursor-pointer"
                       >
                         Barcha testlarga qaytish
                       </button>

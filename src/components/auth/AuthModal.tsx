@@ -2,16 +2,18 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import {
   User as UserIcon,
+  Phone,
   Lock,
   ArrowRight,
   ShieldCheck,
   Clock,
-  BookOpen,
+  Sparkles,
   Mail,
   KeyRound,
   Eye,
   EyeOff,
   CheckCircle2,
+  Database,
 } from 'lucide-react';
 
 interface AuthModalProps {
@@ -26,16 +28,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
     loginWithGmail,
     loginWithTelegram,
     loginAsAdminWithCredentials,
+    isSupabaseActive,
   } = useAuth();
 
   // Mode: 'register' | 'login' | 'admin'
   const [authMode, setAuthMode] = useState<'register' | 'login' | 'admin'>('register');
-  const [authMethod, setAuthMethod] = useState<'email' | 'google' | 'telegram' | 'gmail'>('email');
+  const [authMethod, setAuthMethod] = useState<'phone' | 'telegram'>('phone');
 
-  // Form states
+  // Mandatory Form states: First Name, Last Name, Phone Number
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [emailInput, setEmailInput] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('+998 ');
   const [telegramHandle, setTelegramHandle] = useState('@');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -47,176 +50,144 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
 
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
+    setIsSubmitting(true);
 
-    // ADMIN LOGIN
-    if (authMode === 'admin') {
-      if (!adminLogin.trim()) {
-        setError('Administrator loginini kiriting (Masalan: admin).');
-        return;
-      }
-      if (!adminPassword.trim()) {
-        setError('Administrator parolini kiriting (Masalan: admin123).');
-        return;
-      }
-
-      const res = loginAsAdminWithCredentials(adminLogin.trim(), adminPassword.trim());
-      if (res.success) {
-        setSuccessMsg("Administrator sifatida muvaffaqiyatli kirdingiz!");
-        setTimeout(() => {
-          if (onSuccess) onSuccess();
-        }, 400);
-      } else {
-        setError(res.error || "Noto'g'ri administrator login yoki parol!");
-      }
-      return;
-    }
-
-    // REGISTRATION
-    if (authMode === 'register') {
-      if (!firstName.trim()) {
-        setError('Iltimos, ismingizni kiriting.');
-        return;
-      }
-      if (!lastName.trim()) {
-        setError('Iltimos, familiyangizni kiriting.');
-        return;
-      }
-
-      if (authMethod === 'google') {
-        if (!emailInput.trim() || !emailInput.includes('@')) {
-          setError('Iltimos, haqiqiy Google email manzilingizni kiriting.');
+    try {
+      // 1. ADMIN LOGIN
+      if (authMode === 'admin') {
+        if (!adminLogin.trim()) {
+          setError('Administrator loginini kiriting.');
+          setIsSubmitting(false);
           return;
         }
-        loginWithGoogle(emailInput.trim(), `${firstName} ${lastName}`);
-        setSuccessMsg("Google orqali ro'yxatdan o'tdingiz! Arizangiz adminga yuborildi.");
-        setTimeout(() => { if (onSuccess) onSuccess(); }, 400);
-        return;
-      }
-
-      if (authMethod === 'gmail') {
-        if (!emailInput.trim() || !emailInput.includes('@')) {
-          setError('Iltimos, Gmail pochta manzilingizni kiriting.');
+        if (!adminPassword.trim()) {
+          setError('Administrator parolini kiriting.');
+          setIsSubmitting(false);
           return;
         }
-        loginWithGmail(emailInput.trim(), `${firstName} ${lastName}`);
-        setSuccessMsg("Gmail orqali ro'yxatdan o'tdingiz! Arizangiz adminga yuborildi.");
-        setTimeout(() => { if (onSuccess) onSuccess(); }, 400);
+
+        const res = loginAsAdminWithCredentials(adminLogin.trim(), adminPassword.trim());
+        if (res.success) {
+          setSuccessMsg("Administrator sifatida muvaffaqiyatli kirdingiz!");
+          setTimeout(() => {
+            if (onSuccess) onSuccess();
+          }, 400);
+        } else {
+          setError(res.error || "Noto'g'ri administrator login yoki parol!");
+        }
+        setIsSubmitting(false);
         return;
       }
 
-      if (authMethod === 'telegram') {
-        if (!telegramHandle.trim() || telegramHandle.trim() === '@') {
-          setError('Iltimos, Telegram username kiriting (Masalan: @username).');
+      // 2. REGISTRATION (Mandatory: First Name, Last Name, Phone Number - NO EMAIL)
+      if (authMode === 'register') {
+        if (!firstName.trim()) {
+          setError('Iltimos, ismingizni kiriting (Ism majburiy).');
+          setIsSubmitting(false);
           return;
         }
-        loginWithTelegram(telegramHandle.trim(), `${firstName} ${lastName}`);
-        setSuccessMsg("Telegram orqali ro'yxatdan o'tdingiz! Arizangiz adminga yuborildi.");
-        setTimeout(() => { if (onSuccess) onSuccess(); }, 400);
-        return;
-      }
-
-      // Default Email / Username
-      if (!emailInput.trim()) {
-        setError('Iltimos, email yoki login kiriting.');
-        return;
-      }
-
-      const success = register(firstName, lastName, emailInput.trim(), 'email');
-      if (success) {
-        setSuccessMsg("Muvaffaqiyatli ro'yxatdan o'tdingiz! Arizangiz adminga yuborildi.");
-        setTimeout(() => {
-          if (onSuccess) onSuccess();
-        }, 400);
-      }
-      return;
-    }
-
-    // LOGIN
-    if (authMode === 'login') {
-      if (authMethod === 'google') {
-        if (!emailInput.trim() || !emailInput.includes('@')) {
-          setError('Google hisobingiz email manzilini kiriting.');
+        if (!lastName.trim()) {
+          setError('Iltimos, familiyangizni kiriting (Familiya majburiy).');
+          setIsSubmitting(false);
           return;
         }
-        const success = loginWithGoogle(emailInput.trim());
+        if (!phoneNumber.trim() || phoneNumber.trim().length < 9) {
+          setError("Iltimos, telefon raqamingizni to'liq kiriting (Telefon raqam majburiy).");
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Standard Phone Register without email
+        const cleanTg = telegramHandle.trim() !== '@' && telegramHandle.trim().length > 1 ? telegramHandle.trim() : undefined;
+        const success = await register(
+          firstName.trim(),
+          lastName.trim(),
+          phoneNumber.trim(),
+          undefined,
+          'phone',
+          cleanTg
+        );
+
         if (success) {
-          setSuccessMsg('Google orqali tizimga kirdingiz!');
-          setTimeout(() => { if (onSuccess) onSuccess(); }, 400);
+          setSuccessMsg("Ro'yxatdan muvaffaqiyatli o'tdingiz! Arizangiz adminga yuborildi.");
+          setTimeout(() => {
+            if (onSuccess) onSuccess();
+          }, 400);
         }
+        setIsSubmitting(false);
         return;
       }
 
-      if (authMethod === 'gmail') {
-        if (!emailInput.trim() || !emailInput.includes('@')) {
-          setError('Gmail manzilingizni kiriting.');
+      // 3. LOGIN (By Phone Number or Telegram)
+      if (authMode === 'login') {
+        let identifier = phoneNumber.trim();
+
+        if (authMethod === 'telegram') {
+          identifier = telegramHandle.trim();
+        } else {
+          identifier = phoneNumber.trim();
+        }
+
+        if (!identifier || identifier === '@') {
+          setError("Iltimos, telefon raqamingizni kiriting.");
+          setIsSubmitting(false);
           return;
         }
-        const success = loginWithGmail(emailInput.trim());
+
+        const success = login(identifier);
         if (success) {
-          setSuccessMsg('Gmail orqali tizimga kirdingiz!');
+          setSuccessMsg('Muvaffaqiyatli tizimga kirdingiz!');
           setTimeout(() => { if (onSuccess) onSuccess(); }, 400);
+        } else {
+          setError("Bunday telefon raqamli foydalanuvchi topilmadi. Avval ro'yxatdan o'tishingiz kerak.");
         }
-        return;
+        setIsSubmitting(false);
       }
-
-      if (authMethod === 'telegram') {
-        if (!telegramHandle.trim() || telegramHandle.trim() === '@') {
-          setError('Telegram @username kiriting.');
-          return;
-        }
-        const success = loginWithTelegram(telegramHandle.trim());
-        if (success) {
-          setSuccessMsg('Telegram orqali tizimga kirdingiz!');
-          setTimeout(() => { if (onSuccess) onSuccess(); }, 400);
-        }
-        return;
-      }
-
-      if (!emailInput.trim()) {
-        setError('Email yoki loginingizni kiriting.');
-        return;
-      }
-
-      const success = login(emailInput.trim());
-      if (success) {
-        setSuccessMsg('Tizimga muvaffaqiyatli kirdingiz!');
-        setTimeout(() => {
-          if (onSuccess) onSuccess();
-        }, 400);
-      } else {
-        setError("Bunday foydalanuvchi topilmadi. Avval ro'yxatdan o'ting.");
-      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message || "Xatolik yuz berdi. Iltimos qayta urinib ko'ring.");
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div
-      id="auth-screen-container"
-      className="min-h-screen bg-gradient-to-br from-slate-100 via-indigo-50/40 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8"
+      id="auth-modal-overlay"
+      className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/80 flex flex-col justify-center items-center p-4 sm:p-6 lg:p-8"
     >
       <div className="max-w-md w-full">
         {/* Brand Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 mb-4">
-            <BookOpen className="w-7 h-7" />
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white shadow-xl shadow-cyan-500/20 mb-3 ring-4 ring-cyan-500/20">
+            <Sparkles className="w-7 h-7" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            EduPlatform Ta'lim Portali
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
+            <span>AI Future</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+              LMS
+            </span>
           </h1>
-          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-            Zamonaviy IT, Sun'iy Intellekt va Dasturlash ta'lim tizimi
+          <p className="mt-1.5 text-xs text-slate-400">
+            Sun'iy Intellekt va Zamonaviy IT Ta'lim Portali
           </p>
+
+          {/* Supabase Status Indicator */}
+          <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono bg-slate-800/80 border border-slate-700 text-slate-300">
+            <Database className="w-3 h-3 text-cyan-400" />
+            <span>{isSupabaseActive ? 'Supabase Auth Faol' : 'Xavfsiz Lokal Baza'}</span>
+          </div>
         </div>
 
         {/* Auth Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 sm:p-8 shadow-xl border border-slate-200/80 dark:border-slate-800">
-          {/* Top 3-Way Tabs: Ro'yxatdan o'tish, Kirish, Admin */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl mb-6">
+        <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-800 text-white">
+          {/* Top 3-Way Tabs */}
+          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-950 rounded-xl mb-6 border border-slate-800">
             <button
               id="auth-tab-register"
               type="button"
@@ -226,8 +197,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
               }}
               className={`py-2 text-xs font-semibold rounded-lg transition-all ${
                 authMode === 'register'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               Ro'yxatdan o'tish
@@ -241,8 +212,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
               }}
               className={`py-2 text-xs font-semibold rounded-lg transition-all ${
                 authMode === 'login'
-                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-white shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
               Kirish
@@ -256,8 +227,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
               }}
               className={`py-2 text-xs font-semibold rounded-lg transition-all ${
                 authMode === 'admin'
-                  ? 'bg-amber-600 text-white shadow-sm'
-                  : 'text-amber-600 dark:text-amber-400 hover:text-amber-700'
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'text-amber-400 hover:text-amber-300'
               }`}
             >
               Admin Kirish
@@ -267,7 +238,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
           {error && (
             <div
               id="auth-error-alert"
-              className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-medium"
+              className="mb-4 p-3 rounded-xl bg-rose-950/60 border border-rose-800 text-rose-300 text-xs font-medium"
             >
               {error}
             </div>
@@ -276,41 +247,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
           {successMsg && (
             <div
               id="auth-success-alert"
-              className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-medium flex items-center gap-2"
+              className="mb-4 p-3 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs font-medium flex items-center gap-2"
             >
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
 
-          {/* Method Selection (For Register and Login) */}
-          {(authMode === 'register' || authMode === 'login') && (
-            <div className="mb-5 space-y-2.5">
-              <div className="text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {authMode === 'register' ? "Qaysi usul orqali ro'yxatdan o'tasiz?" : "Qaysi usul orqali kirasiz?"}
+          {/* Method Selection (Only For Login) */}
+          {authMode === 'login' && (
+            <div className="mb-5 space-y-2">
+              <div className="text-center text-xs font-medium text-slate-400">
+                Kirish usulini tanlang:
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
-                {/* Google */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* Telefon */}
                 <button
                   type="button"
                   onClick={() => {
-                    setAuthMethod('google');
+                    setAuthMethod('phone');
                     setError(null);
                   }}
-                  className={`py-2 px-1 rounded-xl border text-[11px] font-semibold flex flex-col items-center justify-center gap-1 transition-all ${
-                    authMethod === 'google'
-                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm'
-                      : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  className={`py-2 px-1 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    authMethod === 'phone'
+                      ? 'bg-slate-800 text-cyan-400 border-cyan-500 ring-2 ring-cyan-500/30'
+                      : 'bg-slate-950 hover:bg-slate-800/80 text-slate-400 border-slate-800'
                   }`}
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z" />
-                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z" />
-                    <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z" />
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z" />
-                  </svg>
-                  <span>Google</span>
+                  <Phone className="w-4 h-4 text-cyan-400" />
+                  <span>Telefon Raqam</span>
                 </button>
 
                 {/* Telegram */}
@@ -320,10 +286,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                     setAuthMethod('telegram');
                     setError(null);
                   }}
-                  className={`py-2 px-1 rounded-xl border text-[11px] font-semibold flex flex-col items-center justify-center gap-1 transition-all ${
+                  className={`py-2 px-1 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                     authMethod === 'telegram'
-                      ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 border-sky-500 ring-2 ring-sky-500/20 shadow-sm'
-                      : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                      ? 'bg-slate-800 text-sky-400 border-sky-500 ring-2 ring-sky-500/30'
+                      : 'bg-slate-950 hover:bg-slate-800/80 text-slate-400 border-slate-800'
                   }`}
                 >
                   <svg className="w-4 h-4 fill-[#229ED9]" viewBox="0 0 24 24">
@@ -331,93 +297,57 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                   </svg>
                   <span>Telegram</span>
                 </button>
-
-                {/* Gmail */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMethod('gmail');
-                    setError(null);
-                  }}
-                  className={`py-2 px-1 rounded-xl border text-[11px] font-semibold flex flex-col items-center justify-center gap-1 transition-all ${
-                    authMethod === 'gmail'
-                      ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 border-rose-500 ring-2 ring-rose-500/20 shadow-sm'
-                      : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                  }`}
-                >
-                  <svg className="w-4 h-4 fill-rose-500" viewBox="0 0 24 24">
-                    <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4ZM20 8L12 13L4 8V6L12 11L20 6V8Z" />
-                  </svg>
-                  <span>Gmail</span>
-                </button>
-
-                {/* Email / Login */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMethod('email');
-                    setError(null);
-                  }}
-                  className={`py-2 px-1 rounded-xl border text-[11px] font-semibold flex flex-col items-center justify-center gap-1 transition-all ${
-                    authMethod === 'email'
-                      ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm'
-                      : 'bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                  }`}
-                >
-                  <Mail className="w-4 h-4 text-indigo-500" />
-                  <span>Email</span>
-                </button>
               </div>
             </div>
           )}
 
           {/* MAIN FORM */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* ADMIN LOGIN VIEW */}
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            {/* 1. ADMIN LOGIN FORM */}
             {authMode === 'admin' && (
               <>
-                <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
-                  <KeyRound className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <strong>Administrator Xavfsiz Kirish:</strong> Kurslar, darslar, testlar va talabalar hisobini tasdiqlash uchun maxsus login va parolingizni kiriting.
-                  </div>
+                <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-800 text-xs text-amber-200 flex items-start gap-2">
+                  <KeyRound className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Administrator Kirish:</strong> Kurslar, darslar va talabalar hisobini tasdiqlash uchun maxsus login va parolingizni kiriting.
+                  </span>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Admin Logini <span className="text-amber-600">*</span>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Admin Logini <span className="text-amber-400">*</span>
                   </label>
                   <div className="relative">
-                    <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <UserIcon className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       required
                       value={adminLogin}
                       onChange={(e) => setAdminLogin(e.target.value)}
-                      placeholder="admin yoki admin@eduplatform.uz"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                      placeholder="admin yoki aslonbek"
+                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Admin Paroli <span className="text-amber-600">*</span>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Admin Paroli <span className="text-amber-400">*</span>
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type={showAdminPassword ? 'text' : 'password'}
                       required
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
-                      placeholder="Admin paroli (admin123)"
-                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="Administrator paroli"
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                     />
                     <button
                       type="button"
                       onClick={() => setShowAdminPassword(!showAdminPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
                     >
                       {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -426,7 +356,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
 
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold shadow-md shadow-amber-600/25 transition-all flex items-center justify-center gap-2 mt-2"
+                  disabled={isSubmitting}
+                  className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold shadow-md transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
                 >
                   <KeyRound className="w-4 h-4" />
                   <span>Admin Panelga Kirish</span>
@@ -434,205 +365,146 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
               </>
             )}
 
-            {/* REGISTRATION FORM */}
+            {/* 2. REGISTRATION FORM (First Name, Last Name, Phone Number - NO EMAIL) */}
             {authMode === 'register' && (
               <>
-                {/* Notice: Admin approval is strictly required */}
-                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-200">
-                  <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-800 text-xs text-cyan-200 flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
                   <span>
-                    Ro'yxatdan o'tgach hisobingiz <strong>Pending (kutilmoqda)</strong> holatida bo'ladi. Faqat administrator tasdiqlaganidan so'ng kurslar va testlar ochiladi.
+                    Yangi ro'yxatdan o'tgan barcha talabalar avtomatik <strong>Pending (kutilmoqda)</strong> holatiga olinadi va admin tasdig'idan so'ng kurslar ochiladi.
                   </span>
                 </div>
 
                 {/* First Name & Last Name */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Ism <span className="text-rose-500">*</span>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Ism <span className="text-cyan-400">*</span>
                     </label>
                     <div className="relative">
-                      <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <UserIcon className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
                         required
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="Masalan: Sardor"
-                        className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Ismingizni kiriting"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Familiya <span className="text-rose-500">*</span>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Familiya <span className="text-cyan-400">*</span>
                     </label>
                     <div className="relative">
-                      <UserIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <UserIcon className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
                         required
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Masalan: Qodirov"
-                        className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Familiyangizni kiriting"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Method Specific Fields */}
-                {authMethod === 'telegram' ? (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Telegram Username <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="w-4 h-4 text-sky-500 absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
-                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.926z" />
-                        </svg>
-                      </div>
-                      <input
-                        type="text"
-                        required
-                        value={telegramHandle}
-                        onChange={(e) => setTelegramHandle(e.target.value)}
-                        placeholder="@username"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
+                {/* MANDATORY PHONE NUMBER */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Telefon Raqami (Majburiy) <span className="text-cyan-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="tel"
+                      required
+                      value={phoneNumber}
+                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      placeholder="+998 90 123 45 67"
+                      className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
                   </div>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      {authMethod === 'google'
-                        ? 'Google Pochta Manzili'
-                        : authMethod === 'gmail'
-                        ? 'Gmail Pochta Manzili'
-                        : 'Elektron Pochta yoki Foydalanuvchi Nomi'}{' '}
-                      <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="email"
-                        required
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        placeholder={
-                          authMethod === 'gmail'
-                            ? 'masalan@gmail.com'
-                            : 'foydalanuvchi@pochta.uz'
-                        }
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
+                  <p className="text-[10px] text-slate-400 mt-1">Admin tasdiqlashi uchun haqiqiy telefon raqamingizni kiriting.</p>
+                </div>
+
+                {/* Optional Telegram */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Telegram Username (Ixtiyoriy)
+                  </label>
+                  <div className="relative">
+                    <span className="w-4 h-4 text-sky-400 absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-mono">@</span>
+                    <input
+                      type="text"
+                      value={telegramHandle}
+                      onChange={(e) => setTelegramHandle(e.target.value)}
+                      placeholder="@username"
+                      className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
                   </div>
-                )}
+                </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 mt-2"
+                  disabled={isSubmitting}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/20 transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
                 >
-                  <span>
-                    {authMethod === 'google'
-                      ? "Google Bilan Ro'yxatdan O'tish"
-                      : authMethod === 'gmail'
-                      ? "Gmail Bilan Ro'yxatdan O'tish"
-                      : authMethod === 'telegram'
-                      ? "Telegram Bilan Ro'yxatdan O'tish"
-                      : "Ro'yxatdan O'tish"}
-                  </span>
+                  <span>Ro'yxatdan O'tish va Ariza Yuborish</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </>
             )}
 
-            {/* LOGIN FORM */}
+            {/* 3. LOGIN FORM */}
             {authMode === 'login' && (
               <>
                 {authMethod === 'telegram' ? (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
                       Telegram Username (@username)
                     </label>
                     <div className="relative">
-                      <div className="w-4 h-4 text-sky-500 absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
-                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.926z" />
-                        </svg>
-                      </div>
+                      <span className="w-4 h-4 text-sky-400 absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-mono">@</span>
                       <input
                         type="text"
                         required
                         value={telegramHandle}
                         onChange={(e) => setTelegramHandle(e.target.value)}
                         placeholder="@username"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      {authMethod === 'google'
-                        ? 'Google Pochta Manzilingiz'
-                        : authMethod === 'gmail'
-                        ? 'Gmail Pochta Manzilingiz'
-                        : 'Elektron Pochta yoki Login'}
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Telefon Raqamingiz
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
                         required
-                        value={emailInput}
-                        onChange={(e) => setEmailInput(e.target.value)}
-                        placeholder="masalan: aslonbek@eduplatform.uz"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="+998 90 123 45 67"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
+                    <p className="text-[10px] text-slate-400 mt-1">Ro'yxatdan o'tgan telefon raqamingizni kiriting</p>
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Parol (Ixtiyoriy)
-                  </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
                 <button
                   type="submit"
-                  className="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 mt-2"
+                  disabled={isSubmitting}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-semibold shadow-md transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
                 >
-                  <span>
-                    {authMethod === 'google'
-                      ? 'Google Orqali Kirish'
-                      : authMethod === 'gmail'
-                      ? 'Gmail Orqali Kirish'
-                      : authMethod === 'telegram'
-                      ? 'Telegram Orqali Kirish'
-                      : 'Platformaga Kirish'}
-                  </span>
+                  <span>Platformaga Kirish</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </>
@@ -640,10 +512,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
           </form>
 
           {/* Security Assurance */}
-          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 text-center">
-            <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-500" />
-              <span>EduPlatform xavfsiz va himoyalangan ta'lim tizimi</span>
+          <div className="mt-6 pt-4 border-t border-slate-800 text-center">
+            <p className="text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>AI Future • Xavfsiz, Shifrlangan va PWA-Moslashtirilgan Platforma</span>
             </p>
           </div>
         </div>

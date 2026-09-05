@@ -94,9 +94,14 @@ export const AdminCmsView: React.FC = () => {
   const [managingCourseLessons, setManagingCourseLessons] = useState<Course | null>(null);
   const [newLessonTitle, setNewLessonTitle] = useState('');
   const [newLessonDuration, setNewLessonDuration] = useState('15 daqiqa');
+  const [newLessonBunnyId, setNewLessonBunnyId] = useState('');
+  const [newLessonLibraryId, setNewLessonLibraryId] = useState('384729');
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [editingLessonTitle, setEditingLessonTitle] = useState('');
   const [editingLessonDuration, setEditingLessonDuration] = useState('');
+  const [editingLessonBunnyId, setEditingLessonBunnyId] = useState('');
+  const [editingLessonLibraryId, setEditingLessonLibraryId] = useState('384729');
+
 
   // QUIZ MANAGEMENT STATE
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
@@ -252,27 +257,33 @@ export const AdminCmsView: React.FC = () => {
     e.preventDefault();
     if (!managingCourseLessons || !newLessonTitle.trim()) return;
 
-    addLessonToCourse(managingCourseLessons.id, {
+    const lessonData: Omit<Lesson, 'id'> = {
       title: newLessonTitle.trim(),
       duration: newLessonDuration.trim() || '15 daqiqa',
       isCompleted: false,
-    });
-    const newLessonObj = {
+      bunnyVideoId: newLessonBunnyId.trim() || undefined,
+      libraryId: newLessonLibraryId.trim() || '384729',
+      courseName: managingCourseLessons.title,
+    };
+
+    addLessonToCourse(managingCourseLessons.id, lessonData);
+    const newLessonObj: Lesson = {
       id: `lesson-${Date.now()}`,
-      title: newLessonTitle.trim(),
-      duration: newLessonDuration.trim() || '15 daqiqa',
-      isCompleted: false,
+      ...lessonData,
     };
     setManagingCourseLessons((prev) =>
       prev ? { ...prev, lessons: [...prev.lessons, newLessonObj] } : null
     );
     setNewLessonTitle('');
+    setNewLessonBunnyId('');
   };
 
-  const handleStartEditLesson = (lesson: { id: string; title: string; duration: string }) => {
+  const handleStartEditLesson = (lesson: Lesson) => {
     setEditingLessonId(lesson.id);
     setEditingLessonTitle(lesson.title);
     setEditingLessonDuration(lesson.duration);
+    setEditingLessonBunnyId(lesson.bunnyVideoId || '');
+    setEditingLessonLibraryId(lesson.libraryId || '384729');
   };
 
   const handleSaveEditLesson = (courseId: string, lessonId: string) => {
@@ -280,6 +291,8 @@ export const AdminCmsView: React.FC = () => {
     updateLessonInCourse(courseId, lessonId, {
       title: editingLessonTitle.trim(),
       duration: editingLessonDuration.trim() || '15 daqiqa',
+      bunnyVideoId: editingLessonBunnyId.trim() || undefined,
+      libraryId: editingLessonLibraryId.trim() || '384729',
     });
     setManagingCourseLessons((prev) => {
       if (!prev) return null;
@@ -287,7 +300,13 @@ export const AdminCmsView: React.FC = () => {
         ...prev,
         lessons: prev.lessons.map((l) =>
           l.id === lessonId
-            ? { ...l, title: editingLessonTitle.trim(), duration: editingLessonDuration.trim() || l.duration }
+            ? {
+                ...l,
+                title: editingLessonTitle.trim(),
+                duration: editingLessonDuration.trim() || l.duration,
+                bunnyVideoId: editingLessonBunnyId.trim() || undefined,
+                libraryId: editingLessonLibraryId.trim() || '384729',
+              }
             : l
         ),
       };
@@ -295,7 +314,9 @@ export const AdminCmsView: React.FC = () => {
     setEditingLessonId(null);
     setEditingLessonTitle('');
     setEditingLessonDuration('');
+    setEditingLessonBunnyId('');
   };
+
 
   // QUIZ ACTIONS
   const handleOpenEditQuiz = (q: Quiz) => {
@@ -668,8 +689,16 @@ export const AdminCmsView: React.FC = () => {
                           </div>
                         </td>
 
-                        <td className="px-5 py-4 font-mono font-semibold text-slate-700 dark:text-slate-300">
-                          {u.phoneNumber}
+                        <td className="px-5 py-4 font-mono font-semibold text-slate-800 dark:text-slate-200">
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
+                            <a
+                              href={`tel:${u.phoneNumber}`}
+                              className="hover:text-cyan-600 dark:hover:text-cyan-400 hover:underline"
+                            >
+                              {u.phoneNumber || 'Kiritilmagan'}
+                            </a>
+                          </div>
                         </td>
 
                         <td className="px-5 py-4">
@@ -987,7 +1016,7 @@ export const AdminCmsView: React.FC = () => {
                   required
                   value={annTitle}
                   onChange={(e) => setAnnTitle(e.target.value)}
-                  placeholder="Masalan: Ertaga soat 18:00 da AI bo'yicha vebinar"
+                  placeholder="Ertaga soat 18:00 da AI bo'yicha amaliy vebinar"
                   className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
@@ -1417,7 +1446,7 @@ export const AdminCmsView: React.FC = () => {
                     required
                     value={userFirstName}
                     onChange={(e) => setUserFirstName(e.target.value)}
-                    placeholder="Masalan: Azizbek"
+                    placeholder="Ismni kiriting"
                     className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1428,7 +1457,7 @@ export const AdminCmsView: React.FC = () => {
                     required
                     value={userLastName}
                     onChange={(e) => setUserLastName(e.target.value)}
-                    placeholder="Masalan: Qodirov"
+                    placeholder="Familiyani kiriting"
                     className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1529,7 +1558,7 @@ export const AdminCmsView: React.FC = () => {
                   required
                   value={courseTitle}
                   onChange={(e) => setCourseTitle(e.target.value)}
-                  placeholder="Masalan: Python bilan Sun'iy Intellekt"
+                  placeholder="Kurs nomini kiriting"
                   className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                 />
               </div>
@@ -1571,7 +1600,7 @@ export const AdminCmsView: React.FC = () => {
                     required
                     value={courseInstructor}
                     onChange={(e) => setCourseInstructor(e.target.value)}
-                    placeholder="Masalan: Jamshid Aliyev"
+                    placeholder="Aslonbek Muxtorov"
                     className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                   />
                 </div>
@@ -1653,9 +1682,9 @@ export const AdminCmsView: React.FC = () => {
             </div>
 
             {/* Add Lesson Form */}
-            <form onSubmit={handleAddLesson} className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl space-y-2">
+            <form onSubmit={handleAddLesson} className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700">
               <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                Yangi dars qo'shish
+                Yangi dars qo'shish (Bunny.net Video Stream qo'llab-quvvatlanadi)
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <input
@@ -1674,9 +1703,25 @@ export const AdminCmsView: React.FC = () => {
                   className="px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                 />
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={newLessonBunnyId}
+                  onChange={(e) => setNewLessonBunnyId(e.target.value)}
+                  placeholder="Bunny Video ID (7b34e2...)"
+                  className="px-3 py-1.5 rounded-lg text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+                <input
+                  type="text"
+                  value={newLessonLibraryId}
+                  onChange={(e) => setNewLessonLibraryId(e.target.value)}
+                  placeholder="Bunny Library ID (384729)"
+                  className="px-3 py-1.5 rounded-lg text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                />
+              </div>
               <button
                 type="submit"
-                className="w-full py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all cursor-pointer"
+                className="w-full py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all cursor-pointer shadow-sm"
               >
                 Darsni Qo'shish
               </button>
@@ -1690,33 +1735,46 @@ export const AdminCmsView: React.FC = () => {
                   className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2"
                 >
                   {editingLessonId === lesson.id ? (
-                    <div className="flex-1 flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={editingLessonTitle}
-                        onChange={(e) => setEditingLessonTitle(e.target.value)}
-                        className="flex-1 px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
-                      />
-                      <input
-                        type="text"
-                        value={editingLessonDuration}
-                        onChange={(e) => setEditingLessonDuration(e.target.value)}
-                        className="w-24 px-2 py-1 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleSaveEditLesson(managingCourseLessons.id, lesson.id)}
-                        className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 cursor-pointer"
-                      >
-                        Saqlash
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingLessonId(null)}
-                        className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs cursor-pointer"
-                      >
-                        Bekor
-                      </button>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editingLessonTitle}
+                          onChange={(e) => setEditingLessonTitle(e.target.value)}
+                          className="flex-1 px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                          placeholder="Dars nomi"
+                        />
+                        <input
+                          type="text"
+                          value={editingLessonDuration}
+                          onChange={(e) => setEditingLessonDuration(e.target.value)}
+                          className="w-24 px-2 py-1 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                          placeholder="Vaqt"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editingLessonBunnyId}
+                          onChange={(e) => setEditingLessonBunnyId(e.target.value)}
+                          className="flex-1 px-2.5 py-1 rounded-lg text-xs font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
+                          placeholder="Bunny Video ID"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSaveEditLesson(managingCourseLessons.id, lesson.id)}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 cursor-pointer"
+                        >
+                          Saqlash
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingLessonId(null)}
+                          className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs cursor-pointer"
+                        >
+                          Bekor
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -1724,8 +1782,12 @@ export const AdminCmsView: React.FC = () => {
                         <span className="w-5 h-5 shrink-0 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold flex items-center justify-center text-[10px]">
                           {idx + 1}
                         </span>
-                        <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">{lesson.title}</span>
-                        <span className="text-[11px] text-slate-400 font-mono shrink-0">• {lesson.duration}</span>
+                        <div className="truncate">
+                          <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">{lesson.title}</span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {lesson.duration} {lesson.bunnyVideoId ? `• Video: ${lesson.bunnyVideoId}` : ''}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="flex items-center gap-1 shrink-0">
@@ -1758,6 +1820,7 @@ export const AdminCmsView: React.FC = () => {
                 </div>
               ))}
             </div>
+
           </div>
         </div>
       )}
@@ -1791,7 +1854,7 @@ export const AdminCmsView: React.FC = () => {
                   required
                   value={quizTitle}
                   onChange={(e) => setQuizTitle(e.target.value)}
-                  placeholder="Masalan: Python Asoslari va Neyron Tarmoqlar"
+                  placeholder="Sun'iy Intellekt Asoslari va Neyron Tarmoqlar"
                   className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                 />
               </div>

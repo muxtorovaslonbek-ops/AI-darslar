@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Course, Quiz, QuizQuestion, Lesson } from '../types';
 import { INITIAL_COURSES, INITIAL_QUIZZES } from '../data/mockData';
+import { fetchSupabaseCourses, upsertSupabaseCourse, upsertSupabaseLesson, isSupabaseConfigured } from '../lib/supabase';
 
 interface CourseContextType {
   courses: Course[];
@@ -27,8 +28,8 @@ const CourseContext = createContext<CourseContextType | undefined>(undefined);
 export function CourseProvider({ children }: { children: React.ReactNode }) {
   const [courses, setCourses] = useState<Course[]>(() => {
     const version = localStorage.getItem('eduplatform-courses-version');
-    if (version !== 'v2') {
-      localStorage.setItem('eduplatform-courses-version', 'v2');
+    if (version !== 'v3') {
+      localStorage.setItem('eduplatform-courses-version', 'v3');
       localStorage.setItem('eduplatform-courses', JSON.stringify(INITIAL_COURSES));
       return INITIAL_COURSES;
     }
@@ -43,6 +44,17 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
     }
     return INITIAL_COURSES;
   });
+
+  // Sync with Supabase on mount if configured
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      fetchSupabaseCourses().then((supabaseCourses) => {
+        if (supabaseCourses && supabaseCourses.length > 0) {
+          setCourses(supabaseCourses);
+        }
+      });
+    }
+  }, []);
 
   const [quizzes, setQuizzes] = useState<Quiz[]>(() => {
     const saved = localStorage.getItem('eduplatform-quizzes');
@@ -72,17 +84,22 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
       rating: 5.0,
     };
     setCourses((prev) => [newCourse, ...prev]);
+    upsertSupabaseCourse(newCourse);
   };
 
   const updateCourse = (id: string, updates: Partial<Course>) => {
-    setCourses((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
-    );
+    setCourses((prev) => {
+      const updatedList = prev.map((c) => (c.id === id ? { ...c, ...updates } : c));
+      const target = updatedList.find((c) => c.id === id);
+      if (target) upsertSupabaseCourse(target);
+      return updatedList;
+    });
   };
 
   const deleteCourse = (id: string) => {
     setCourses((prev) => prev.filter((c) => c.id !== id));
   };
+
 
   const toggleLessonCompleted = (courseId: string, lessonId: string) => {
     setCourses((prev) =>
@@ -106,30 +123,39 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
       id: `lesson-${Date.now()}`,
     };
     setCourses((prev) =>
-      prev.map((c) =>
-        c.id === courseId
-          ? {
-              ...c,
-              lessons: [...c.lessons, newLesson],
-              lessonsCount: c.lessons.length + 1,
-            }
-          : c
-      )
+      prev.map((c) => {
+        if (c.id === courseId) {
+          upsertSupabaseLesson(courseId, c.title, newLesson);
+          return {
+            ...c,
+            lessons: [...c.lessons, newLesson],
+            lessonsCount: c.lessons.length + 1,
+          };
+        }
+        return c;
+      })
     );
   };
 
   const updateLessonInCourse = (courseId: string, lessonId: string, updates: Partial<Lesson>) => {
     setCourses((prev) =>
-      prev.map((c) =>
-        c.id === courseId
-          ? {
-              ...c,
-              lessons: c.lessons.map((l) => (l.id === lessonId ? { ...l, ...updates } : l)),
+      prev.map((c) => {
+        if (c.id === courseId) {
+          const updatedLessons = c.lessons.map((l) => {
+            if (l.id === lessonId) {
+              const merged = { ...l, ...updates };
+              upsertSupabaseLesson(courseId, c.title, merged);
+              return merged;
             }
-          : c
-      )
+            return l;
+          });
+          return { ...c, lessons: updatedLessons };
+        }
+        return c;
+      })
     );
   };
+
 
   const deleteLessonFromCourse = (courseId: string, lessonId: string) => {
     setCourses((prev) =>

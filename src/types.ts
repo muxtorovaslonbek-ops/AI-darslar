@@ -21,6 +21,10 @@ export interface Lesson {
   title: string;
   duration: string;
   isCompleted?: boolean;
+  bunnyVideoId?: string;
+  libraryId?: string;
+  description?: string;
+  courseName?: string;
 }
 
 export interface Course {

@@ -1,6 +1,6 @@
 {
-  "name": "EduPlatform",
-  "description": "Zamonaviy ta'lim platformasi: kurslar, interaktiv testlar, AI yordamchi va administrator boshqaruvi tizimi.",
+  "name": "AI Future",
+  "description": "AI Future - Zamonaviy IT va Sun'iy Intellekt ta'lim platformasi: professional kurslar, interaktiv testlar, himoyalangan video player va PWA tizimi.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
