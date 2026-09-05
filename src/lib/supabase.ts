@@ -207,3 +207,63 @@ export async function fetchSupabaseCourses(): Promise<Course[] | null> {
   }
 }
 
+// Profil rasmini (Avatar) Supabase Storage'ga yuklash
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  if (isSupabaseConfigured) {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}/${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (!uploadError) {
+        const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        if (data?.publicUrl) {
+          return data.publicUrl;
+        }
+      } else {
+        console.warn('Supabase storage upload error:', uploadError.message);
+      }
+    } catch (e) {
+      console.warn('Supabase storage upload exception:', e);
+    }
+  }
+
+  // Graceful local base64 fallback agar Supabase storage bucket ulanmagan bo'lsa
+  return new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Profil ma'lumotlarini bazada yangilash
+export async function updateUserProfile(
+  userId: string, 
+  updates: { first_name?: string; last_name?: string; phone_number?: string; avatar_url?: string }
+) {
+  if (isSupabaseConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId)
+        .select()
+        .single();
+
+      if (!error && data) return data;
+      if (error) {
+        console.warn('Supabase profile update warning:', error.message);
+      }
+    } catch (e) {
+      console.warn('Supabase profile update exception:', e);
+    }
+  }
+
+  return { id: userId, ...updates };
+}
+

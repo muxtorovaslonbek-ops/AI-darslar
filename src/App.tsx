@@ -12,6 +12,7 @@ import { TestsView } from './components/pages/TestsView';
 import { AiAssistantView } from './components/pages/AiAssistantView';
 import { SettingsView } from './components/pages/SettingsView';
 import { AdminCmsView } from './components/pages/AdminCmsView';
+import { NotFoundView } from './components/pages/NotFoundView';
 import { ActiveRoute } from './types';
 
 function MainApp() {
@@ -59,6 +60,10 @@ function MainApp() {
           onSuccessAuth={() => setActiveRoute('dashboard')}
           onRouteChange={setActiveRoute}
         />
+      )}
+
+      {activeRoute === 'not-found' && (
+        <NotFoundView onNavigate={(p) => setActiveRoute(p as ActiveRoute)} onRouteChange={setActiveRoute} />
       )}
     </Layout>
   );

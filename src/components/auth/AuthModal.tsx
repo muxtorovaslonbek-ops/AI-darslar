@@ -33,11 +33,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
 
   // Mode: 'register' | 'login' | 'admin'
   const [authMode, setAuthMode] = useState<'register' | 'login' | 'admin'>('register');
-  const [authMethod, setAuthMethod] = useState<'phone' | 'telegram'>('phone');
+  const [authMethod, setAuthMethod] = useState<'google' | 'telegram' | 'gmail'>('google');
 
-  // Mandatory Form states: First Name, Last Name, Phone Number
+  // Form states: First Name, Last Name, Email/Gmail/Google, Telegram, Phone
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [emailInput, setEmailInput] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('+998 ');
   const [telegramHandle, setTelegramHandle] = useState('@');
   const [password, setPassword] = useState('');
@@ -85,7 +86,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
         return;
       }
 
-      // 2. REGISTRATION (Mandatory: First Name, Last Name, Phone Number - NO EMAIL)
+      // 2. REGISTRATION (Google, Telegram, Gmail)
       if (authMode === 'register') {
         if (!firstName.trim()) {
           setError('Iltimos, ismingizni kiriting (Ism majburiy).');
@@ -97,57 +98,123 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
           setIsSubmitting(false);
           return;
         }
-        if (!phoneNumber.trim() || phoneNumber.trim().length < 9) {
-          setError("Iltimos, telefon raqamingizni to'liq kiriting (Telefon raqam majburiy).");
-          setIsSubmitting(false);
-          return;
-        }
 
-        // Standard Phone Register without email
-        const cleanTg = telegramHandle.trim() !== '@' && telegramHandle.trim().length > 1 ? telegramHandle.trim() : undefined;
-        const success = await register(
-          firstName.trim(),
-          lastName.trim(),
-          phoneNumber.trim(),
-          undefined,
-          'phone',
-          cleanTg
-        );
-
-        if (success) {
-          setSuccessMsg("Ro'yxatdan muvaffaqiyatli o'tdingiz! Arizangiz adminga yuborildi.");
+        if (authMethod === 'google') {
+          if (!emailInput.trim() || !emailInput.includes('@')) {
+            setError("Iltimos, to'g'ri Google elektron pochtangizni kiriting.");
+            setIsSubmitting(false);
+            return;
+          }
+          await loginWithGoogle(
+            emailInput.trim(),
+            `${firstName.trim()} ${lastName.trim()}`,
+            phoneNumber.trim() || undefined
+          );
+          setSuccessMsg("Google orqali muvaffaqiyatli ro'yxatdan o'tdingiz! Arizangiz adminga yuborildi.");
           setTimeout(() => {
             if (onSuccess) onSuccess();
           }, 400);
-        }
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 3. LOGIN (By Phone Number or Telegram)
-      if (authMode === 'login') {
-        let identifier = phoneNumber.trim();
-
-        if (authMethod === 'telegram') {
-          identifier = telegramHandle.trim();
-        } else {
-          identifier = phoneNumber.trim();
-        }
-
-        if (!identifier || identifier === '@') {
-          setError("Iltimos, telefon raqamingizni kiriting.");
           setIsSubmitting(false);
           return;
         }
 
-        const success = login(identifier);
-        if (success) {
-          setSuccessMsg('Muvaffaqiyatli tizimga kirdingiz!');
-          setTimeout(() => { if (onSuccess) onSuccess(); }, 400);
-        } else {
-          setError("Bunday telefon raqamli foydalanuvchi topilmadi. Avval ro'yxatdan o'tishingiz kerak.");
+        if (authMethod === 'gmail') {
+          if (!emailInput.trim() || !emailInput.includes('@')) {
+            setError("Iltimos, to'g'ri Gmail manzilingizni kiriting.");
+            setIsSubmitting(false);
+            return;
+          }
+          await loginWithGmail(
+            emailInput.trim(),
+            `${firstName.trim()} ${lastName.trim()}`,
+            phoneNumber.trim() || undefined
+          );
+          setSuccessMsg("Gmail orqali muvaffaqiyatli ro'yxatdan o'tdingiz! Arizangiz adminga yuborildi.");
+          setTimeout(() => {
+            if (onSuccess) onSuccess();
+          }, 400);
+          setIsSubmitting(false);
+          return;
         }
-        setIsSubmitting(false);
+
+        if (authMethod === 'telegram') {
+          if (!telegramHandle.trim() || telegramHandle.trim() === '@') {
+            setError('Telegram @username kiriting.');
+            setIsSubmitting(false);
+            return;
+          }
+          await loginWithTelegram(
+            telegramHandle.trim(),
+            `${firstName.trim()} ${lastName.trim()}`,
+            phoneNumber.trim() || undefined
+          );
+          setSuccessMsg("Telegram orqali muvaffaqiyatli ro'yxatdan o'tdingiz! Arizangiz adminga yuborildi.");
+          setTimeout(() => {
+            if (onSuccess) onSuccess();
+          }, 400);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // 3. LOGIN (By Google, Telegram, Gmail)
+      if (authMode === 'login') {
+        if (authMethod === 'google') {
+          if (!emailInput.trim() || !emailInput.includes('@')) {
+            setError('Google hisob pochtasini kiriting.');
+            setIsSubmitting(false);
+            return;
+          }
+          const success = await loginWithGoogle(emailInput.trim());
+          if (success) {
+            setSuccessMsg('Google orqali muvaffaqiyatli kirdingiz!');
+            setTimeout(() => {
+              if (onSuccess) onSuccess();
+            }, 400);
+          } else {
+            setError("Bunday Google hisobli foydalanuvchi topilmadi. Avval ro'yxatdan o'ting.");
+          }
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (authMethod === 'gmail') {
+          if (!emailInput.trim() || !emailInput.includes('@')) {
+            setError('Gmail pochtangizni kiriting.');
+            setIsSubmitting(false);
+            return;
+          }
+          const success = await loginWithGmail(emailInput.trim());
+          if (success) {
+            setSuccessMsg('Gmail orqali muvaffaqiyatli kirdingiz!');
+            setTimeout(() => {
+              if (onSuccess) onSuccess();
+            }, 400);
+          } else {
+            setError("Bunday Gmail hisobli foydalanuvchi topilmadi. Avval ro'yxatdan o'ting.");
+          }
+          setIsSubmitting(false);
+          return;
+        }
+
+        if (authMethod === 'telegram') {
+          if (!telegramHandle.trim() || telegramHandle.trim() === '@') {
+            setError('Telegram @username kiriting.');
+            setIsSubmitting(false);
+            return;
+          }
+          const success = await loginWithTelegram(telegramHandle.trim());
+          if (success) {
+            setSuccessMsg('Telegram orqali muvaffaqiyatli kirdingiz!');
+            setTimeout(() => {
+              if (onSuccess) onSuccess();
+            }, 400);
+          } else {
+            setError("Bunday Telegram foydalanuvchisi topilmadi. Avval ro'yxatdan o'ting.");
+          }
+          setIsSubmitting(false);
+          return;
+        }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -254,29 +321,36 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
             </div>
           )}
 
-          {/* Method Selection (Only For Login) */}
-          {authMode === 'login' && (
+          {/* Method Selection (For Register and Login - Google, Telegram, Gmail) */}
+          {(authMode === 'register' || authMode === 'login') && (
             <div className="mb-5 space-y-2">
               <div className="text-center text-xs font-medium text-slate-400">
-                Kirish usulini tanlang:
+                {authMode === 'register' ? "Ro'yxatdan o'tish usulini tanlang:" : "Kirish usulini tanlang:"}
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                {/* Telefon */}
+              <div className="grid grid-cols-3 gap-2">
+                {/* Google */}
                 <button
                   type="button"
                   onClick={() => {
-                    setAuthMethod('phone');
+                    setAuthMethod('google');
                     setError(null);
                   }}
-                  className={`py-2 px-1 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    authMethod === 'phone'
+                  className={`py-2 px-1.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    authMethod === 'google'
                       ? 'bg-slate-800 text-cyan-400 border-cyan-500 ring-2 ring-cyan-500/30'
                       : 'bg-slate-950 hover:bg-slate-800/80 text-slate-400 border-slate-800'
                   }`}
                 >
-                  <Phone className="w-4 h-4 text-cyan-400" />
-                  <span>Telefon Raqam</span>
+                  <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z" />
+                      <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z" />
+                      <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z" />
+                      <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z" />
+                    </svg>
+                  </div>
+                  <span>Google</span>
                 </button>
 
                 {/* Telegram */}
@@ -286,16 +360,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                     setAuthMethod('telegram');
                     setError(null);
                   }}
-                  className={`py-2 px-1 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  className={`py-2 px-1.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     authMethod === 'telegram'
                       ? 'bg-slate-800 text-sky-400 border-sky-500 ring-2 ring-sky-500/30'
                       : 'bg-slate-950 hover:bg-slate-800/80 text-slate-400 border-slate-800'
                   }`}
                 >
-                  <svg className="w-4 h-4 fill-[#229ED9]" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 fill-[#229ED9] shrink-0" viewBox="0 0 24 24">
                     <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.926z" />
                   </svg>
                   <span>Telegram</span>
+                </button>
+
+                {/* Gmail */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMethod('gmail');
+                    setError(null);
+                  }}
+                  className={`py-2 px-1.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    authMethod === 'gmail'
+                      ? 'bg-slate-800 text-rose-400 border-rose-500 ring-2 ring-rose-500/30'
+                      : 'bg-slate-950 hover:bg-slate-800/80 text-slate-400 border-slate-800'
+                  }`}
+                >
+                  <Mail className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span>Gmail</span>
                 </button>
               </div>
             </div>
@@ -365,7 +456,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
               </>
             )}
 
-            {/* 2. REGISTRATION FORM (First Name, Last Name, Phone Number - NO EMAIL) */}
+            {/* 2. REGISTRATION FORM (Google, Telegram, Gmail) */}
             {authMode === 'register' && (
               <>
                 <div className="p-2.5 rounded-xl bg-cyan-950/40 border border-cyan-800 text-xs text-cyan-200 flex items-start gap-2">
@@ -412,38 +503,84 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                   </div>
                 </div>
 
-                {/* MANDATORY PHONE NUMBER */}
+                {/* Method-Specific Input */}
+                {authMethod === 'google' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Google Elektron Pochtangiz <span className="text-cyan-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z" />
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z" />
+                          <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z" />
+                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="email"
+                        required
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="ismingiz@gmail.com"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {authMethod === 'gmail' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Gmail Manzilingiz <span className="text-rose-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        required
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="ismingiz@gmail.com"
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-700 bg-slate-950 text-xs text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {authMethod === 'telegram' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Telegram Username (@username) <span className="text-sky-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="w-4 h-4 text-sky-400 absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-mono">@</span>
+                      <input
+                        type="text"
+                        required
+                        value={telegramHandle}
+                        onChange={(e) => setTelegramHandle(e.target.value)}
+                        placeholder="@username"
+                        className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Optional Phone Number */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Telefon Raqami (Majburiy) <span className="text-cyan-400">*</span>
+                    Telefon Raqami (Bog'lanish uchun)
                   </label>
                   <div className="relative">
                     <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="tel"
-                      required
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="+998 90 123 45 67"
                       className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-1">Admin tasdiqlashi uchun haqiqiy telefon raqamingizni kiriting.</p>
-                </div>
-
-                {/* Optional Telegram */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Telegram Username (Ixtiyoriy)
-                  </label>
-                  <div className="relative">
-                    <span className="w-4 h-4 text-sky-400 absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-mono">@</span>
-                    <input
-                      type="text"
-                      value={telegramHandle}
-                      onChange={(e) => setTelegramHandle(e.target.value)}
-                      placeholder="@username"
-                      className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-700 bg-slate-950 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                     />
                   </div>
                 </div>
@@ -453,7 +590,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                   disabled={isSubmitting}
                   className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/20 transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
                 >
-                  <span>Ro'yxatdan O'tish va Ariza Yuborish</span>
+                  <span>
+                    {authMethod === 'google'
+                      ? "Google bilan Ro'yxatdan O'tish"
+                      : authMethod === 'telegram'
+                      ? "Telegram bilan Ro'yxatdan O'tish"
+                      : "Gmail bilan Ro'yxatdan O'tish"}
+                  </span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </>
@@ -462,7 +605,52 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
             {/* 3. LOGIN FORM */}
             {authMode === 'login' && (
               <>
-                {authMethod === 'telegram' ? (
+                {authMethod === 'google' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Google Elektron Pochtangiz
+                    </label>
+                    <div className="relative">
+                      <div className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center">
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z" />
+                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z" />
+                          <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z" />
+                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="email"
+                        required
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="ismingiz@gmail.com"
+                        className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {authMethod === 'gmail' && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Gmail Elektron Pochtangiz
+                    </label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        required
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        placeholder="ismingiz@gmail.com"
+                        className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-xs text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {authMethod === 'telegram' && (
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
                       Telegram Username (@username)
@@ -475,27 +663,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                         value={telegramHandle}
                         onChange={(e) => setTelegramHandle(e.target.value)}
                         placeholder="@username"
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
                       />
                     </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      Telefon Raqamingiz
-                    </label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        required
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="+998 90 123 45 67"
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <p className="text-[10px] text-slate-400 mt-1">Ro'yxatdan o'tgan telefon raqamingizni kiriting</p>
                   </div>
                 )}
 

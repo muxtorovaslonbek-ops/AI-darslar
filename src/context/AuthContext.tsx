@@ -8,8 +8,17 @@ import {
   fetchSupabaseProfiles,
 } from '../lib/supabase';
 
+export interface ProfileData {
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  avatar_url?: string;
+}
+
 interface AuthContextType {
   currentUser: User | null;
+  user: User | null;
+  profile: ProfileData | null;
   users: User[];
   isAuthenticated: boolean;
   isSupabaseActive: boolean;
@@ -28,6 +37,7 @@ interface AuthContextType {
     telegramHandle?: string
   ) => Promise<boolean>;
   logout: () => void;
+  signOut: () => void;
   updateCurrentUser: (updates: Partial<User>) => void;
   updateAnyUser: (userId: string, updates: Partial<User>) => void;
   addUser: (userData: Omit<User, 'id' | 'joinedDate'>) => void;
@@ -36,6 +46,7 @@ interface AuthContextType {
   rejectUser: (userId: string) => void;
   switchUserRoleOrStatus: (userId: string, status: UserStatus, role?: UserRole) => void;
   refreshUsers: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   clearDemoUsers: () => void;
 }
 
@@ -470,10 +481,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
+  const profile: ProfileData | null = currentUser
+    ? {
+        first_name: currentUser.firstName,
+        last_name: currentUser.lastName,
+        phone_number: currentUser.phoneNumber,
+        avatar_url: currentUser.avatarUrl,
+      }
+    : null;
+
   return (
     <AuthContext.Provider
       value={{
         currentUser,
+        user: currentUser,
+        profile,
         users,
         isAuthenticated,
         isSupabaseActive: isSupabaseConfigured,
@@ -485,6 +507,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loginAsAdminWithCredentials,
         register,
         logout,
+        signOut: logout,
         updateCurrentUser,
         updateAnyUser,
         addUser,
@@ -493,6 +516,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         rejectUser,
         switchUserRoleOrStatus,
         refreshUsers,
+        refreshProfile: refreshUsers,
         clearDemoUsers,
       }}
     >

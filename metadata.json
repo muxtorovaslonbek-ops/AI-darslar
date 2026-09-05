@@ -1,6 +1,6 @@
 {
   "name": "AI Future",
-  "description": "AI Future - Zamonaviy IT va Sun'iy Intellekt ta'lim platformasi: professional kurslar, interaktiv testlar, himoyalangan video player va PWA tizimi.",
+  "description": "Sun'iy intellekt va zamonaviy texnologiyalar bo'yicha onlayn darslar va interaktiv platforma",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -94,5 +94,6 @@ export type ActiveRoute =
   | 'ai-assistant'
   | 'settings'
   | 'admin-cms'
-  | 'intro';
+  | 'intro'
+  | 'not-found';
 
