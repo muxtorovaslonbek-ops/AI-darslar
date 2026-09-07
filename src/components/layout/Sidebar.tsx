@@ -123,26 +123,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             {/* Header / Brand */}
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-                  <BookOpen className="w-5 h-5" />
+              <div 
+                onClick={() => { onRouteChange('dashboard'); onClose(); }}
+                className="group flex items-center gap-3 cursor-pointer select-none"
+              >
+                {/* Logo Icon with Ambient Glow Aura */}
+                <div className="relative flex items-center justify-center">
+                  {/* Soft Ambient Halo Aura */}
+                  <div className="absolute -inset-1 bg-gradient-to-tr from-indigo-500 via-violet-500 to-purple-500 rounded-2xl blur-md opacity-40 dark:opacity-55 group-hover:opacity-85 transition-opacity duration-300 group-hover:scale-105" />
+
+                  {/* Logo Icon Badge */}
+                  <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-purple-600 text-white font-black text-base shadow-md shadow-indigo-500/25 ring-1 ring-white/25 overflow-hidden">
+                    {/* Subtle top gloss shine */}
+                    <div className="absolute inset-x-0 top-0 h-1/2 bg-white/20 rounded-t-xl pointer-events-none" />
+                    <span className="relative z-10 tracking-tighter">AI</span>
+                  </div>
+
+                  {/* Micro Corner Sparkle */}
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 z-20">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-60"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gradient-to-r from-pink-500 to-violet-500 shadow-sm shadow-pink-500/50"></span>
+                  </span>
                 </div>
-                <div>
-                  <h1 className="font-bold text-lg tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
-                    EduPlatform
-                    <span className="text-[10px] uppercase font-semibold tracking-wider px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300">
-                      v2.0
-                    </span>
-                  </h1>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+
+                {/* Animated Logo Text */}
+                <div className="relative flex flex-col">
+                  <span className="text-xl font-black tracking-tight text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors duration-200">
+                    AI Darslar
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
                     Zamonaviy Ta'lim Portali
-                  </p>
+                  </span>
                 </div>
               </div>
               <button
                 id="close-sidebar-btn"
                 onClick={onClose}
-                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors"
+                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 aria-label="Menyuni yopish"
               >
                 <X className="w-5 h-5" />

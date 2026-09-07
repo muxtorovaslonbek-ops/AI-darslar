@@ -187,10 +187,16 @@ export const CoursesView: React.FC<CoursesViewProps> = ({ onNavigateToAdmin }) =
   // Catalog View
   return (
     <div id="courses-catalog-view" className="max-w-7xl mx-auto space-y-6 pb-16">
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-slate-950 text-white p-6 sm:p-8 border border-indigo-900/50 shadow-xl">
+      {/* Header Banner with Atmospheric Ambient Light */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 text-white p-6 sm:p-9 border border-indigo-500/30 shadow-2xl shadow-indigo-950/40">
+        {/* Atmospheric Ambient Radial Orbs */}
+        <div className="absolute -top-24 -left-20 w-80 h-80 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute -bottom-24 -right-16 w-80 h-80 rounded-full bg-purple-500/20 blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
+
         <div className="relative z-10 max-w-2xl space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-indigo-200 backdrop-blur-md">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-indigo-200 backdrop-blur-md border border-white/10">
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             <span>EduPlatform Barcha Kurslar & Yo'nalishlar</span>
           </div>

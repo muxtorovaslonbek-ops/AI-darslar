@@ -34,36 +34,56 @@ export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => vo
 
   return (
     <div id="dashboard-view" className="max-w-7xl mx-auto space-y-6 pb-16">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 text-white p-6 sm:p-8 shadow-lg shadow-indigo-600/20">
+      {/* Welcome Banner with Atmospheric Ambient Light */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950 text-white p-6 sm:p-9 border border-indigo-500/30 shadow-2xl shadow-indigo-950/40">
+        {/* Atmospheric Ambient Radial Orbs */}
+        <div className="absolute -top-24 -left-20 w-80 h-80 rounded-full bg-indigo-500/25 blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute -bottom-24 -right-16 w-80 h-80 rounded-full bg-purple-500/25 blur-3xl pointer-events-none animate-pulse" />
+        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-64 h-64 rounded-full bg-pink-500/15 blur-3xl pointer-events-none" />
+        
+        {/* Geometric Dot Grid Overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-white">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-semibold text-indigo-200 border border-white/10">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span>EduPlatform Innovatsion Ta'lim Portali</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white">
               Xush kelibsiz, {currentUser?.firstName || 'Talaba'}!
             </h1>
-            <p className="text-sm text-indigo-100 max-w-xl">
+            <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
               Interaktiv kurslar, amaliy topshiriqlar va sun'iy intellekt asosidagi yordamchi orqali bilimlaringizni oshiring.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2.5">
-            <button
-              id="dashboard-explore-courses-btn"
-              onClick={() => onRouteChange('courses')}
-              className="px-5 py-2.5 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>{isPending ? 'Kurslar (Qulflangan)' : 'Kurslarni ko\'rish'}</span>
-            </button>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Primary Glowing Shimmer CTA Button */}
+            <div className="relative group/cta">
+              {/* Soft Neon Glow Aura */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl blur-md opacity-70 group-hover/cta:opacity-100 transition duration-500 group-hover/cta:duration-200 animate-pulse" />
+              
+              <button
+                id="dashboard-explore-courses-btn"
+                onClick={() => onRouteChange('courses')}
+                className="relative px-6 py-3 rounded-xl bg-white text-indigo-700 hover:bg-slate-50 font-black text-xs sm:text-sm shadow-xl transition-all flex items-center gap-2 cursor-pointer overflow-hidden border border-white/80 group-hover/cta:scale-[1.02]"
+              >
+                {/* Moving Shimmer Sheen */}
+                <span className="absolute inset-0 -translate-x-full group-hover/cta:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent pointer-events-none" />
+                
+                <BookOpen className="w-4 h-4 text-indigo-600" />
+                <span>{isPending ? 'Kurslar (Qulflangan)' : "Boshlash va Kurslarni Ko'rish"}</span>
+                <ArrowRight className="w-4 h-4 text-indigo-600 group-hover/cta:translate-x-1 transition-transform" />
+              </button>
+            </div>
 
+            {/* AI Assistant Button */}
             <button
               id="dashboard-open-ai-btn"
               onClick={() => onRouteChange('ai-assistant')}
-              className="px-5 py-2.5 rounded-xl bg-indigo-500/30 hover:bg-indigo-500/50 border border-white/20 text-white font-bold text-xs backdrop-blur-md transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs sm:text-sm backdrop-blur-md transition-all flex items-center gap-2 cursor-pointer shadow-sm hover:scale-[1.02]"
             >
               <Sparkles className="w-4 h-4 text-amber-300" />
               <span>AI Yordamchi</span>
@@ -289,28 +309,33 @@ export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => vo
           {courses.slice(0, 2).map((course) => (
             <div
               key={course.id}
-              className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between"
+              className="relative group rounded-2xl transition-all duration-300"
             >
-              <div>
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
-                  <span className="font-semibold text-indigo-600 dark:text-indigo-400">{course.category}</span>
-                  <span>{course.duration}</span>
-                </div>
-                <h3 className="font-bold text-base text-slate-900 dark:text-white">{course.title}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{course.description}</p>
-              </div>
+              {/* Ambient Border Glow Aura on Hover */}
+              <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
 
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                  {course.instructor}
-                </span>
-                <button
-                  onClick={() => onRouteChange('courses')}
-                  className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1 cursor-pointer"
-                >
-                  <span>{isPending ? 'Kursni Ko\'rish' : 'Boshlash'}</span>
-                  <Play className="w-3 h-3" />
-                </button>
+              <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 group-hover:border-transparent shadow-sm group-hover:shadow-[0_12px_30px_-5px_rgba(99,102,241,0.2)] flex flex-col justify-between h-full transition-all duration-300">
+                <div>
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
+                    <span className="font-semibold text-indigo-600 dark:text-indigo-400">{course.category}</span>
+                    <span>{course.duration}</span>
+                  </div>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white">{course.title}</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{course.description}</p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                    {course.instructor}
+                  </span>
+                  <button
+                    onClick={() => onRouteChange('courses')}
+                    className="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1 cursor-pointer shadow-sm"
+                  >
+                    <span>{isPending ? 'Kursni Ko\'rish' : 'Boshlash'}</span>
+                    <Play className="w-3 h-3" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}

@@ -109,17 +109,37 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {/* Logo */}
+          {/* Dynamic Glowing AI Darslar Logo */}
           <div 
+            id="navbar-glowing-logo"
             onClick={() => handleNav('dashboard')} 
-            className="flex items-center gap-2.5 cursor-pointer select-none"
+            className="group flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none"
           >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-md shadow-indigo-500/20">
-              AI
+            {/* Logo Icon with Ambient Glow Aura */}
+            <div className="relative flex items-center justify-center">
+              {/* Soft Ambient Halo Aura */}
+              <div className="absolute -inset-1 bg-gradient-to-tr from-indigo-500 via-violet-500 to-purple-500 rounded-2xl blur-md opacity-40 dark:opacity-55 group-hover:opacity-85 transition-opacity duration-300 group-hover:scale-105" />
+
+              {/* Logo Icon Badge */}
+              <div className="relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-purple-600 text-white font-black text-sm sm:text-base shadow-md shadow-indigo-500/25 ring-1 ring-white/25 overflow-hidden">
+                {/* Subtle top gloss shine */}
+                <div className="absolute inset-x-0 top-0 h-1/2 bg-white/20 rounded-t-xl pointer-events-none" />
+                <span className="relative z-10 tracking-tighter">AI</span>
+              </div>
+
+              {/* Micro Corner Sparkle */}
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 z-20">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-60"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gradient-to-r from-pink-500 to-violet-500 shadow-sm shadow-pink-500/50"></span>
+              </span>
             </div>
-            <span className="hidden sm:inline text-lg sm:text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
-              AI Darslar
-            </span>
+
+            {/* Logo Text */}
+            <div className="relative flex items-center">
+              <span className="text-lg sm:text-xl font-black tracking-tight text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors duration-200">
+                AI Darslar
+              </span>
+            </div>
           </div>
         </div>
 
