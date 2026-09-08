@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
 import { ProtectedVideoPlayer } from '../common/ProtectedVideoPlayer';
 import { Course, Lesson } from '../../types';
+import { NeonButton } from '../common/NeonButton';
 import {
   BookOpen,
   Play,
@@ -95,7 +96,7 @@ export const CoursesView: React.FC<CoursesViewProps> = ({ onNavigateToAdmin }) =
             </div>
 
             {/* Current Lesson Info Card */}
-            <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+            <div className="p-6 rounded-2xl bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="px-3 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold">
                   {activeCourse.category}
@@ -135,7 +136,7 @@ export const CoursesView: React.FC<CoursesViewProps> = ({ onNavigateToAdmin }) =
 
           {/* Lessons Syllabus Sidebar */}
           <div className="lg:col-span-4 space-y-3">
-            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
               <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center justify-between mb-3">
                 <span>Darslar Mundarijasi</span>
                 <span className="text-xs font-normal text-slate-500">
@@ -277,91 +278,91 @@ export const CoursesView: React.FC<CoursesViewProps> = ({ onNavigateToAdmin }) =
           <div
             key={course.id}
             id={`course-card-${course.id}`}
-            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800/80 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all overflow-hidden flex flex-col justify-between group"
+            className="relative group rounded-2xl transition-all duration-300 flex flex-col justify-between"
           >
-            <div>
-              {/* Thumbnail Container */}
-              <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
-                <img
-                  src={course.thumbnail}
-                  alt={course.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
+            {/* Ambient Border Hover Glow Aura */}
+            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
 
-                {/* Badges on Thumbnail */}
-                <div className="absolute top-3 left-3 flex items-center gap-2">
-                  <span className="px-2.5 py-1 rounded-lg bg-indigo-900/80 backdrop-blur-md text-white text-[10px] font-bold border border-indigo-400/30">
-                    {course.category}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-lg bg-slate-900/80 backdrop-blur-md text-slate-200 text-[10px] font-semibold">
-                    {course.level}
-                  </span>
-                </div>
+            <div className="bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] group-hover:border-indigo-400/50 dark:group-hover:border-indigo-400/40 group-hover:shadow-[0_16px_36px_-4px_rgba(99,102,241,0.25)] transition-all duration-300 overflow-hidden flex flex-col justify-between h-full">
+              <div>
+                {/* Thumbnail Container */}
+                <div className="relative aspect-video w-full overflow-hidden bg-slate-950">
+                  <img
+                    src={course.thumbnail}
+                    alt={course.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
 
-                {isPending && (
-                  <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-amber-500/90 text-white text-[10px] font-bold flex items-center gap-1 shadow-md">
-                    <Lock className="w-3 h-3" />
-                    <span>Qulflangan</span>
+                  {/* Badges on Thumbnail */}
+                  <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-lg bg-indigo-900/80 backdrop-blur-md text-white text-[10px] font-bold border border-indigo-400/30 shadow-sm">
+                      {course.category}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg bg-slate-900/80 backdrop-blur-md text-slate-200 text-[10px] font-semibold border border-white/10">
+                      {course.level}
+                    </span>
                   </div>
-                )}
-              </div>
 
-              {/* Card Body */}
-              <div className="p-5 space-y-3">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">
-                  {course.title}
-                </h3>
+                  {isPending && (
+                    <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-amber-500/90 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1 shadow-md border border-amber-300/30">
+                      <Lock className="w-3 h-3" />
+                      <span>Qulflangan</span>
+                    </div>
+                  )}
+                </div>
 
-                <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                  {course.description}
-                </p>
+                {/* Card Body */}
+                <div className="p-5 space-y-3">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug line-clamp-2">
+                    {course.title}
+                  </h3>
 
-                {/* Course Metadata */}
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-indigo-500" />
-                    {course.duration}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Film className="w-3.5 h-3.5 text-purple-500" />
-                    {course.lessonsCount || course.lessons?.length || 0} ta dars
-                  </span>
-                  <span className="flex items-center gap-1 text-amber-500 font-bold">
-                    <Star className="w-3.5 h-3.5 fill-current" />
-                    {course.rating || 5.0}
-                  </span>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                    {course.description}
+                  </p>
+
+                  {/* Course Metadata */}
+                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                      {course.duration}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Film className="w-3.5 h-3.5 text-purple-500" />
+                      {course.lessonsCount || course.lessons?.length || 0} ta dars
+                    </span>
+                    <span className="flex items-center gap-1 text-amber-500 font-bold">
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                      {course.rating || 5.0}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Card Footer */}
-            <div className="p-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-600 dark:text-slate-300 font-medium truncate max-w-[150px]">
-                {course.instructor}
-              </span>
+              {/* Card Footer */}
+              <div className="p-5 pt-3 border-t border-slate-200/70 dark:border-white/10 flex items-center justify-between bg-slate-50/40 dark:bg-slate-950/20 backdrop-blur-sm">
+                <span className="text-xs text-slate-600 dark:text-slate-300 font-medium truncate max-w-[150px]">
+                  {course.instructor}
+                </span>
 
-              <button
-                onClick={() => handleOpenCourse(course)}
-                disabled={isPending}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  isPending
-                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-600/20'
-                }`}
-              >
-                {isPending ? (
-                  <>
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Tasdiq Kutilmoqda</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-3.5 h-3.5" />
-                    <span>Darsni Boshlash</span>
-                  </>
-                )}
-              </button>
+                <NeonButton
+                  onClick={() => handleOpenCourse(course)}
+                  disabled={isPending}
+                  variant={isPending ? 'primary-gradient' : 'primary-gradient'}
+                  size="sm"
+                  pulse={!isPending}
+                  leftIcon={
+                    isPending ? (
+                      <Lock className="w-3.5 h-3.5" />
+                    ) : (
+                      <Play className="w-3.5 h-3.5" />
+                    )
+                  }
+                >
+                  <span>{isPending ? 'Tasdiq Kutilmoqda' : 'Darsni Boshlash'}</span>
+                </NeonButton>
+              </div>
             </div>
           </div>
         ))}

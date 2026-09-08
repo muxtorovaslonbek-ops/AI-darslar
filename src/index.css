@@ -81,4 +81,46 @@
   background-color: #475569;
 }
 
+/* Ambient Slow Pulse CSS Animations */
+@keyframes ambientSlowPulse {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.08) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes ambientPulseDrift {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1) translate(0px, 0px);
+  }
+  33% {
+    opacity: 0.75;
+    transform: scale(1.06) translate(15px, -10px);
+  }
+  66% {
+    opacity: 0.55;
+    transform: scale(0.97) translate(-10px, 12px);
+  }
+}
+
+.animate-ambient-slow {
+  animation: ambientSlowPulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: transform, opacity;
+}
+
+.animate-ambient-slower {
+  animation: ambientSlowPulse 12s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: transform, opacity;
+}
+
+.animate-ambient-drift {
+  animation: ambientPulseDrift 16s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
 

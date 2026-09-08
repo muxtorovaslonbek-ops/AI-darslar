@@ -117,3 +117,12 @@ export type ActiveRoute =
   | 'intro'
   | 'not-found';
 
+export interface TestResult {
+  id: string;
+  quizId: string;
+  userId: string;
+  score: number;
+  totalQuestions: number;
+  completedAt: string;
+}
+

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
 import { Quiz, QuizQuestion } from '../../types';
+import { NeonButton } from '../common/NeonButton';
 import {
   Lock,
   Clock,
@@ -176,41 +177,48 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
               <div
                 key={quiz.id}
                 id={`quiz-card-${quiz.id}`}
-                className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                className="relative group rounded-2xl transition-all duration-300 flex flex-col justify-between"
               >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
-                      {quiz.category}
-                    </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 font-mono">
-                      <Clock className="w-3.5 h-3.5" />
-                      {quiz.durationMinutes} daqiqa
-                    </span>
+                {/* Ambient Border Hover Glow Aura */}
+                <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
+
+                <div className="bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl rounded-2xl p-6 border border-slate-200/80 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] group-hover:border-cyan-400/50 dark:group-hover:border-cyan-400/40 group-hover:shadow-[0_16px_36px_-4px_rgba(6,182,212,0.25)] transition-all duration-300 flex flex-col justify-between h-full">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 backdrop-blur-md">
+                        {quiz.category}
+                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 font-mono">
+                        <Clock className="w-3.5 h-3.5 text-cyan-500" />
+                        {quiz.durationMinutes} daqiqa
+                      </span>
+                    </div>
+
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {quiz.title}
+                    </h2>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+                      {quiz.description}
+                    </p>
+
+                    <div className="mt-4 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+                      <span>Savollar: <strong>{quiz.questionsCount} ta</strong></span>
+                      <span>Daraja: <strong>{quiz.difficulty}</strong></span>
+                    </div>
                   </div>
 
-                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                    {quiz.title}
-                  </h2>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
-                    {quiz.description}
-                  </p>
-
-                  <div className="mt-4 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-                    <span>Savollar: <strong>{quiz.questionsCount} ta</strong></span>
-                    <span>Daraja: <strong>{quiz.difficulty}</strong></span>
+                  <div className="mt-6 pt-4 border-t border-slate-200/70 dark:border-white/10">
+                    <NeonButton
+                      id={`start-quiz-btn-${quiz.id}`}
+                      onClick={() => startQuiz(quiz)}
+                      variant="cyan"
+                      size="sm"
+                      fullWidth
+                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      <span>Testni Boshlash</span>
+                    </NeonButton>
                   </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    id={`start-quiz-btn-${quiz.id}`}
-                    onClick={() => startQuiz(quiz)}
-                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-semibold shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>Testni Boshlash</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
             ))}
@@ -222,7 +230,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
       {activeQuiz && (
         <div id="quiz-runner-box" className="space-y-6">
           {/* Runner Top Bar */}
-          <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <span className="text-xs font-semibold text-cyan-500 uppercase tracking-wider">
                 {activeQuiz.category}
@@ -260,7 +268,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
 
           {/* Quiz Question Body */}
           {!isSubmitted ? (
-            <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+            <div className="bg-white/80 dark:bg-slate-900/70 backdrop-blur-xl p-6 sm:p-8 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] space-y-6">
               {/* Question progress */}
               <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>
@@ -289,10 +297,10 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                           key={idx}
                           id={`quiz-option-${idx}`}
                           onClick={() => handleSelectOption(qId, idx)}
-                          className={`w-full p-4 rounded-xl border text-left text-xs sm:text-sm font-medium transition-all flex items-center justify-between cursor-pointer ${
+                          className={`w-full p-4 rounded-xl border text-left text-xs sm:text-sm font-medium transition-all flex items-center justify-between cursor-pointer backdrop-blur-md ${
                             isSelected
-                              ? 'border-cyan-500 bg-cyan-500/10 text-cyan-300 ring-2 ring-cyan-500/30 font-semibold'
-                              : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700'
+                              ? 'border-cyan-500 bg-cyan-500/15 text-cyan-300 ring-2 ring-cyan-500/30 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.25)]'
+                              : 'border-slate-200/80 dark:border-white/10 bg-slate-50/60 dark:bg-slate-800/40 text-slate-700 dark:text-slate-300 hover:border-cyan-400/40 dark:hover:border-cyan-400/30'
                           }`}
                         >
                           <div className="flex items-center gap-3">
@@ -300,7 +308,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                               className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-mono font-bold ${
                                 isSelected
                                   ? 'bg-cyan-500 text-slate-950'
-                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                  : 'bg-slate-200/80 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300'
                               }`}
                             >
                               {String.fromCharCode(65 + idx)}
@@ -347,7 +355,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
             </div>
           ) : (
             /* Results Scorecard & Certificate */
-            <div id="quiz-results-card" className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6 text-center">
+            <div id="quiz-results-card" className="bg-white/85 dark:bg-slate-900/75 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-slate-200/80 dark:border-white/10 shadow-2xl space-y-6 text-center">
               {(() => {
                 const { correct, total, percentage } = calculateScore();
                 const isPassed = percentage >= 60;
@@ -357,8 +365,8 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                     <div
                       className={`w-20 h-20 rounded-3xl mx-auto flex items-center justify-center mb-4 ${
                         isPassed
-                          ? 'bg-emerald-500/10 text-emerald-400 ring-8 ring-emerald-500/10 border border-emerald-500/30'
-                          : 'bg-rose-500/10 text-rose-400 ring-8 ring-rose-500/10 border border-rose-500/30'
+                          ? 'bg-emerald-500/15 text-emerald-400 ring-8 ring-emerald-500/10 border border-emerald-500/40'
+                          : 'bg-rose-500/15 text-rose-400 ring-8 ring-rose-500/10 border border-rose-500/40'
                       }`}
                     >
                       <Award className="w-10 h-10" />
@@ -371,7 +379,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                       Siz {total} ta savoldan {correct} tasiga to'g'ri javob berdingiz.
                     </p>
 
-                    <div className="mt-6 inline-flex items-center gap-6 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800">
+                    <div className="mt-6 inline-flex items-center gap-6 p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/50 backdrop-blur-md border border-slate-200/80 dark:border-white/10 shadow-sm">
                       <div>
                         <span className="block text-2xl font-black text-cyan-500">
                           {percentage}%
@@ -393,7 +401,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
 
                     {/* Official Certificate Card (If Passed) */}
                     {isPassed && (
-                      <div className="mt-8 p-6 rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 border border-cyan-500/40 shadow-2xl text-left relative overflow-hidden">
+                      <div className="mt-8 p-6 rounded-3xl bg-gradient-to-br from-slate-950/90 via-slate-900/80 to-indigo-950/90 backdrop-blur-xl border border-cyan-500/40 shadow-2xl text-left relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                           <Award className="w-48 h-48 text-cyan-400" />
                         </div>

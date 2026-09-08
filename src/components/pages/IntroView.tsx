@@ -28,7 +28,8 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { ActiveRoute } from '../../types';
-import { GoogleAccountChooserModal } from '../auth/GoogleAccountChooserModal';
+import { NeonButton } from '../common/NeonButton';
+import { AmbientGlow } from '../common/AmbientGlow';
 
 interface IntroViewProps {
   onSuccessAuth?: () => void;
@@ -45,6 +46,7 @@ export const IntroView: React.FC<IntroViewProps> = ({
     register,
     login,
     loginWithGoogle,
+    loginWithFirebaseGoogle,
     loginWithGmail,
     loginWithTelegram,
     loginAsAdminWithCredentials,
@@ -73,7 +75,29 @@ export const IntroView: React.FC<IntroViewProps> = ({
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGoogleChooserOpen, setIsGoogleChooserOpen] = useState(false);
+
+  // Direct real Google Firebase OAuth authentication
+  const handleRealGoogleAuth = async () => {
+    setAuthError(null);
+    setAuthSuccess(null);
+    setIsSubmitting(true);
+    try {
+      const success = await loginWithFirebaseGoogle();
+      if (success) {
+        setAuthSuccess("Google hisobingiz orqali muvaffaqiyatli kirdingiz!");
+        setTimeout(() => {
+          if (onSuccessAuth) onSuccessAuth();
+        }, 400);
+      } else {
+        setAuthError("Google orqali kirish amalga oshmadi yoki bekor qilindi.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setAuthError(msg || "Google hisobi bilan ulanishda xatolik yuz berdi.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Animated Terminal Typing Effect State
   const [terminalCodeIndex, setTerminalCodeIndex] = useState(0);
@@ -359,9 +383,19 @@ export const IntroView: React.FC<IntroViewProps> = ({
       {/* 0. TOP BRAND & THEME SWITCHER BAR FOR GUEST / LANDING */}
       <header className="flex items-center justify-between py-4 border-b border-slate-200 dark:border-slate-800/80 transition-colors">
         <div className="flex items-center gap-3 select-none">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-indigo-600/20">
-            AI
+          {/* Logo Icon with Ambient Glow Aura */}
+          <div className="relative flex items-center justify-center">
+            <div className="absolute -inset-1 bg-gradient-to-tr from-indigo-500 via-violet-500 to-purple-500 rounded-2xl blur-md opacity-40 dark:opacity-55 transition-opacity duration-300" />
+            <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-purple-600 text-white font-black text-base shadow-md shadow-indigo-500/25 ring-1 ring-white/25 overflow-hidden">
+              <div className="absolute inset-x-0 top-0 h-1/2 bg-white/20 rounded-t-xl pointer-events-none" />
+              <span className="relative z-10 tracking-tighter">AI</span>
+            </div>
+            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 z-20">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-60"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gradient-to-r from-pink-500 to-violet-500 shadow-sm shadow-pink-500/50"></span>
+            </span>
           </div>
+
           <div>
             <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
               AI Darslar
@@ -397,16 +431,18 @@ export const IntroView: React.FC<IntroViewProps> = ({
                 Kirish
               </button>
 
-              <button
+              {/* Reusable Glowing Neon CTA Button */}
+              <NeonButton
                 type="button"
                 onClick={() => {
                   setAuthMode('register');
                   scrollToAuth();
                 }}
-                className="px-4 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-md shadow-indigo-600/20 transition-all cursor-pointer"
+                variant="primary-gradient"
+                size="sm"
               >
                 Ro'yxatdan o'tish
-              </button>
+              </NeonButton>
             </>
           )}
         </div>
@@ -422,9 +458,8 @@ export const IntroView: React.FC<IntroViewProps> = ({
           <canvas ref={canvasRef} className="w-full h-full" />
         </div>
 
-        {/* Ambient Glows */}
-        <div className="absolute -right-24 -top-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-1/4 -bottom-24 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
+        {/* CSS-based Ambient Glow Component with slowly pulsing semi-transparent radial gradient */}
+        <AmbientGlow variant="hero" intensity="medium" pulseSpeed="slow" showGrid showOrbs />
 
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           {/* Left Column: Vision & Action */}
@@ -469,14 +504,17 @@ export const IntroView: React.FC<IntroViewProps> = ({
             <div className="pt-2 flex flex-wrap items-center gap-3.5">
               {!isAuthenticated ? (
                 <>
-                  <button
+                  {/* Primary Main CTA using reusable NeonButton */}
+                  <NeonButton
                     id="hero-start-register-btn"
                     onClick={scrollToAuth}
-                    className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 group cursor-pointer"
+                    variant="primary-white"
+                    size="lg"
+                    leftIcon={<Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />}
+                    rightIcon={<ArrowRight className="w-4 h-4 text-indigo-600 group-hover/neon-btn:translate-x-1 transition-transform" />}
                   >
                     <span>Boshlash va Ro'yxatdan O'tish</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  </NeonButton>
 
                   <button
                     id="hero-admin-quick-btn"
@@ -484,20 +522,21 @@ export const IntroView: React.FC<IntroViewProps> = ({
                       setAuthMode('admin');
                       scrollToAuth();
                     }}
-                    className="px-5 py-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 text-sm font-semibold border border-white/15 hover:border-amber-400/50 transition-all flex items-center gap-2 cursor-pointer"
+                    className="px-5 py-4 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 text-sm font-semibold border border-white/15 hover:border-amber-400/50 transition-all flex items-center gap-2 cursor-pointer"
                   >
                     <KeyRound className="w-4 h-4 text-amber-400" />
                     <span>Admin Sifatida Kirish</span>
                   </button>
                 </>
               ) : (
-                <button
+                <NeonButton
                   onClick={() => onRouteChange && onRouteChange('dashboard')}
-                  className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2 cursor-pointer"
+                  variant="primary-white"
+                  size="lg"
+                  leftIcon={<Play className="w-4 h-4 text-indigo-600" />}
                 >
-                  <Play className="w-4 h-4" />
                   <span>Mening O'quv Kabinetimga O'tish</span>
-                </button>
+                </NeonButton>
               )}
             </div>
           </div>
@@ -571,96 +610,117 @@ export const IntroView: React.FC<IntroViewProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {/* Direction 1 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all space-y-3 group">
-            <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <BrainCircuit className="w-6 h-6" />
+          <div className="relative group rounded-2xl transition-all duration-300">
+            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
+            <div className="p-6 rounded-2xl bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 group-hover:border-transparent shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] group-hover:shadow-[0_12px_32px_-4px_rgba(99,102,241,0.25)] transition-all duration-300 space-y-3 h-full">
+              <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <BrainCircuit className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                🤖 Sun'iy Intellekt (AI) sirlari
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Neyrotarmoqlardan professional darajada foydalanish va ish jarayonlarini avtomatlashtirish.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              🤖 Sun'iy Intellekt (AI) sirlari
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Neyrotarmoqlardan professional darajada foydalanish va ish jarayonlarini avtomatlashtirish.
-            </p>
           </div>
 
           {/* Direction 2 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all space-y-3 group">
-            <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <PenTool className="w-6 h-6" />
+          <div className="relative group rounded-2xl transition-all duration-300">
+            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
+            <div className="p-6 rounded-2xl bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 group-hover:border-transparent shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] group-hover:shadow-[0_12px_32px_-4px_rgba(99,102,241,0.25)] transition-all duration-300 space-y-3 h-full">
+              <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <PenTool className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                🧠 Prompt Engineering san'ati
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                ChatGPT, Claude va Gemini kabi AI modellari bilan to'g'ri muloqot qilish va aniq natijalar olish.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              🧠 Prompt Engineering san'ati
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              ChatGPT, Claude va Gemini kabi AI modellari bilan to'g'ri muloqot qilish va aniq natijalar olish.
-            </p>
           </div>
 
           {/* Direction 3 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all space-y-3 group">
-            <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Sparkles className="w-6 h-6" />
+          <div className="relative group rounded-2xl transition-all duration-300">
+            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
+            <div className="p-6 rounded-2xl bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 group-hover:border-transparent shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] group-hover:shadow-[0_12px_32px_-4px_rgba(99,102,241,0.25)] transition-all duration-300 space-y-3 h-full">
+              <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                🎨 AI orqali Rasm va Video yaratish
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Midjourney, Stable Diffusion va video generatorlar orqali professional sifatdagi media kontent yaratish.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              🎨 AI orqali Rasm va Video yaratish
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Midjourney, Stable Diffusion va video generatorlar orqali professional sifatdagi media kontent yaratish.
-            </p>
           </div>
 
           {/* Direction 4 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all space-y-3 group">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Code2 className="w-6 h-6" />
+          <div className="relative group rounded-2xl transition-all duration-300">
+            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
+            <div className="p-6 rounded-2xl bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 group-hover:border-transparent shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] group-hover:shadow-[0_12px_32px_-4px_rgba(99,102,241,0.25)] transition-all duration-300 space-y-3 h-full">
+              <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Code2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                🌐 Zamonaviy Veb-saytlar yaratish
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Frontend va backend dasturlash: HTML, CSS, JavaScript, React va sun'iy intellekt integratsiyalari.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              🌐 Zamonaviy Veb-saytlar yaratish
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Frontend va backend dasturlash: HTML, CSS, JavaScript, React va sun'iy intellekt integratsiyalari.
-            </p>
           </div>
 
           {/* Direction 5 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all space-y-3 group">
-            <div className="w-12 h-12 rounded-xl bg-cyan-100 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Terminal className="w-6 h-6" />
+          <div className="relative group rounded-2xl transition-all duration-300">
+            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
+            <div className="p-6 rounded-2xl bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 group-hover:border-transparent shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] group-hover:shadow-[0_12px_32px_-4px_rgba(99,102,241,0.25)] transition-all duration-300 space-y-3 h-full">
+              <div className="w-12 h-12 rounded-xl bg-cyan-100 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Terminal className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                💻 Dasturlar yaratish
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Eng so'nggi texnologiyalar yordamida o'z g'oyalaringizni real loyihalarga aylantirish va dasturlar tuzish.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              💻 Dasturlar yaratish
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Eng so'nggi texnologiyalar yordamida o'z g'oyalaringizni real loyihalarga aylantirish va dasturlar tuzish.
-            </p>
           </div>
 
           {/* Direction 6 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all space-y-3 group">
-            <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Briefcase className="w-6 h-6" />
+          <div className="relative group rounded-2xl transition-all duration-300">
+            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
+            <div className="p-6 rounded-2xl bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 group-hover:border-transparent shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] group-hover:shadow-[0_12px_32px_-4px_rgba(99,102,241,0.25)] transition-all duration-300 space-y-3 h-full">
+              <div className="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Briefcase className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                💼 Shaxsiy biznesingizni rivojlantirish
+              </h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                IT va AI yechimlarini qo'llagan holda o'z biznesingizni raqamlashtirish va samaradorlikni oshirish.
+              </p>
             </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              💼 Shaxsiy biznesingizni rivojlantirish
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              IT va AI yechimlarini qo'llagan holda o'z biznesingizni raqamlashtirish va samaradorlikni oshirish.
-            </p>
           </div>
 
           {/* Direction 7 */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all space-y-3 group md:col-span-2 lg:col-span-3">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-teal-100 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                <GraduationCap className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  🎓 O'qituvchilar uchun zamonaviy dars tizimlari
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Ta'lim jarayonini interaktiv tashkil etish, innovatsion o'qitish metodikalari va har bir o'qituvchi uchun shaxsiy veb-platforma yaratish sirlari.
-                </p>
+          <div className="relative group rounded-2xl transition-all duration-300 md:col-span-2 lg:col-span-3">
+            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
+            <div className="p-6 rounded-2xl bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl border border-slate-200/80 dark:border-white/10 group-hover:border-transparent shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] group-hover:shadow-[0_12px_32px_-4px_rgba(99,102,241,0.25)] transition-all duration-300 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-teal-100 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                  <GraduationCap className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    🎓 O'qituvchilar uchun zamonaviy dars tizimlari
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Ta'lim jarayonini interaktiv tashkil etish, innovatsion o'qitish metodikalari va har bir o'qituvchi uchun shaxsiy veb-platforma yaratish sirlari.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -890,47 +950,20 @@ export const IntroView: React.FC<IntroViewProps> = ({
                 {/* Specific Method Input */}
                 {authMethod === 'google' && (
                   <div className="space-y-3">
-                    {/* Google Account Chooser Action Button */}
-                    <div className="p-3.5 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                          <svg className="w-4 h-4" viewBox="0 0 24 24">
-                            <path
-                              fill="#4285F4"
-                              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z"
-                            />
-                            <path
-                              fill="#34A853"
-                              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z"
-                            />
-                            <path
-                              fill="#FBBC05"
-                              d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z"
-                            />
-                            <path
-                              fill="#EA4335"
-                              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z"
-                            />
-                          </svg>
-                          <span>Google hisoblaridan tanlash</span>
-                        </span>
-                        <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold">1 bosishda</span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setIsGoogleChooserOpen(true)}
-                        className="w-full py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-indigo-500 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z" />
-                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z" />
-                          <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z" />
-                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z" />
-                        </svg>
-                        <span>Google hisobini tanlash</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleRealGoogleAuth}
+                      className="w-full py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-indigo-500 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z" />
+                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z" />
+                        <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z" />
+                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z" />
+                      </svg>
+                      <span>Google hisobingiz orqali real ro'yxatdan o'tish</span>
+                    </button>
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -1032,10 +1065,14 @@ export const IntroView: React.FC<IntroViewProps> = ({
                   </p>
                 </div>
 
-                <button
+                <NeonButton
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-3 disabled:opacity-50"
+                  variant="primary-gradient"
+                  size="md"
+                  fullWidth
+                  containerClassName="mt-3"
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
                 >
                   <span>
                     {isSubmitting
@@ -1046,8 +1083,7 @@ export const IntroView: React.FC<IntroViewProps> = ({
                       ? "Telegram bilan Ro'yxatdan O'tish"
                       : "Gmail bilan Ro'yxatdan O'tish"}
                   </span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                </NeonButton>
               </form>
             )}
 
@@ -1056,47 +1092,20 @@ export const IntroView: React.FC<IntroViewProps> = ({
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 {authMethod === 'google' && (
                   <div className="space-y-3">
-                    {/* Google Account Chooser Action Button */}
-                    <div className="p-3.5 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                          <svg className="w-4 h-4" viewBox="0 0 24 24">
-                            <path
-                              fill="#4285F4"
-                              d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z"
-                            />
-                            <path
-                              fill="#34A853"
-                              d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z"
-                            />
-                            <path
-                              fill="#FBBC05"
-                              d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z"
-                            />
-                            <path
-                              fill="#EA4335"
-                              d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z"
-                            />
-                          </svg>
-                          <span>Google hisoblaridan tanlash</span>
-                        </span>
-                        <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold">Tezkor kirish</span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setIsGoogleChooserOpen(true)}
-                        className="w-full py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-indigo-500 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24">
-                          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z" />
-                          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z" />
-                          <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z" />
-                          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z" />
-                        </svg>
-                        <span>Google hisobini tanlash</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleRealGoogleAuth}
+                      className="w-full py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-indigo-500 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z" />
+                        <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z" />
+                        <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z" />
+                        <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z" />
+                      </svg>
+                      <span>Google hisobi orqali to'g'ridan-to'g'ri kirish (Firebase OAuth)</span>
+                    </button>
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -1178,14 +1187,17 @@ export const IntroView: React.FC<IntroViewProps> = ({
                   </div>
                 )}
 
-                <button
+                <NeonButton
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  variant="primary-gradient"
+                  size="md"
+                  fullWidth
+                  containerClassName="mt-3"
+                  rightIcon={<ArrowRight className="w-4 h-4" />}
                 >
                   <span>{isSubmitting ? "Kirilmoqda..." : "Platformaga Kirish"}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                </NeonButton>
               </form>
             )}
 
@@ -1196,7 +1208,7 @@ export const IntroView: React.FC<IntroViewProps> = ({
                   <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <strong className="block font-bold">Administrator Xavfsiz Boshqaruv Tizimi:</strong>
-                    Kurslar, darslar, testlar va talabalar hisobini tasdiqlash uchun maxsus admin login va paroli talab qilinadi.
+                    Kurslar, darslar, testlar va talabalar hisobini tasdiqlash uchun maxsus admin login va paroli talab qilinadi (login: <span className="font-mono font-bold">aslonbek0722</span>, parol: <span className="font-mono font-bold">aslonbek2207</span>).
                   </div>
                 </div>
 
@@ -1211,8 +1223,8 @@ export const IntroView: React.FC<IntroViewProps> = ({
                       required
                       value={adminLogin}
                       onChange={(e) => setAdminLogin(e.target.value)}
-                      placeholder="admin"
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                      placeholder="aslonbek0722"
+                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium font-mono"
                     />
                   </div>
                 </div>
@@ -1228,8 +1240,8 @@ export const IntroView: React.FC<IntroViewProps> = ({
                       required
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="aslonbek2207"
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
                     />
                     <button
                       type="button"
@@ -1241,28 +1253,21 @@ export const IntroView: React.FC<IntroViewProps> = ({
                   </div>
                 </div>
 
-                <button
+                <NeonButton
                   type="submit"
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white text-sm font-bold shadow-lg shadow-amber-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-3"
+                  variant="amber"
+                  size="md"
+                  fullWidth
+                  containerClassName="mt-3"
+                  leftIcon={<ShieldCheck className="w-4 h-4" />}
                 >
-                  <ShieldCheck className="w-4 h-4" />
                   <span>Admin Boshqaruv Paneliga Kirish</span>
-                </button>
+                </NeonButton>
               </form>
             )}
           </div>
         </div>
       </section>
-
-      {/* Google Account Selector Dialog */}
-      <GoogleAccountChooserModal
-        isOpen={isGoogleChooserOpen}
-        onClose={() => setIsGoogleChooserOpen(false)}
-        onSuccess={() => {
-          if (onSuccessAuth) onSuccessAuth();
-        }}
-        mode={authMode === 'login' ? 'login' : 'register'}
-      />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Sun, Moon, User, LogOut } from 'lucide-react';
+import { NeonButton } from './NeonButton';
 
 interface NavbarProps {
   onOpenAuthModal?: () => void;
@@ -68,13 +69,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuthModal, onNavigate }) =
               </button>
             </div>
           ) : (
-            <button
+            <NeonButton
               onClick={onOpenAuthModal}
-              className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md shadow-indigo-500/20 transition-all hover:scale-[1.02] cursor-pointer"
+              variant="primary-gradient"
+              size="sm"
+              leftIcon={<User className="w-4 h-4" />}
             >
-              <User className="w-4 h-4" />
               <span>Kirish</span>
-            </button>
+            </NeonButton>
           )}
         </div>
       </div>

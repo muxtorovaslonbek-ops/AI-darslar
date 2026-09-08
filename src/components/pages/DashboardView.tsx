@@ -21,6 +21,8 @@ import {
   Search,
 } from 'lucide-react';
 import { GlobalSearch } from '../common/GlobalSearch';
+import { NeonButton } from '../common/NeonButton';
+import { AmbientGlow } from '../common/AmbientGlow';
 
 export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => void }> = ({
   onRouteChange,
@@ -36,14 +38,8 @@ export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => vo
     <div id="dashboard-view" className="max-w-7xl mx-auto space-y-6 pb-16">
       {/* Welcome Banner with Atmospheric Ambient Light */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-slate-900 to-purple-950 text-white p-6 sm:p-9 border border-indigo-500/30 shadow-2xl shadow-indigo-950/40">
-        {/* Atmospheric Ambient Radial Orbs */}
-        <div className="absolute -top-24 -left-20 w-80 h-80 rounded-full bg-indigo-500/25 blur-3xl pointer-events-none animate-pulse" />
-        <div className="absolute -bottom-24 -right-16 w-80 h-80 rounded-full bg-purple-500/25 blur-3xl pointer-events-none animate-pulse" />
-        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-64 h-64 rounded-full bg-pink-500/15 blur-3xl pointer-events-none" />
-        
-        {/* Geometric Dot Grid Overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none" />
+        {/* CSS-based Ambient Glow Component with semi-transparent radial gradient */}
+        <AmbientGlow variant="hero" intensity="medium" pulseSpeed="slow" showGrid showOrbs />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
@@ -60,24 +56,17 @@ export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => vo
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* Primary Glowing Shimmer CTA Button */}
-            <div className="relative group/cta">
-              {/* Soft Neon Glow Aura */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl blur-md opacity-70 group-hover/cta:opacity-100 transition duration-500 group-hover/cta:duration-200 animate-pulse" />
-              
-              <button
-                id="dashboard-explore-courses-btn"
-                onClick={() => onRouteChange('courses')}
-                className="relative px-6 py-3 rounded-xl bg-white text-indigo-700 hover:bg-slate-50 font-black text-xs sm:text-sm shadow-xl transition-all flex items-center gap-2 cursor-pointer overflow-hidden border border-white/80 group-hover/cta:scale-[1.02]"
-              >
-                {/* Moving Shimmer Sheen */}
-                <span className="absolute inset-0 -translate-x-full group-hover/cta:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent pointer-events-none" />
-                
-                <BookOpen className="w-4 h-4 text-indigo-600" />
-                <span>{isPending ? 'Kurslar (Qulflangan)' : "Boshlash va Kurslarni Ko'rish"}</span>
-                <ArrowRight className="w-4 h-4 text-indigo-600 group-hover/cta:translate-x-1 transition-transform" />
-              </button>
-            </div>
+            {/* Primary Main CTA using reusable NeonButton */}
+            <NeonButton
+              id="dashboard-explore-courses-btn"
+              onClick={() => onRouteChange('courses')}
+              variant="primary-white"
+              size="md"
+              leftIcon={<BookOpen className="w-4 h-4 text-indigo-600" />}
+              rightIcon={<ArrowRight className="w-4 h-4 text-indigo-600 group-hover/neon-btn:translate-x-1 transition-transform" />}
+            >
+              <span>{isPending ? 'Kurslar (Qulflangan)' : "Boshlash va Kurslarni Ko'rish"}</span>
+            </NeonButton>
 
             {/* AI Assistant Button */}
             <button
@@ -237,7 +226,7 @@ export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => vo
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl p-5 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Mavjud Kurslar</span>
             <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
@@ -250,7 +239,7 @@ export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => vo
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl p-5 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Interaktiv Testlar</span>
             <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center">
@@ -263,7 +252,7 @@ export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => vo
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl p-5 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">O'quv Soatlari</span>
             <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center">
@@ -276,7 +265,7 @@ export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => vo
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl p-5 rounded-2xl border border-slate-200/80 dark:border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Ketma-ketlik (Streak)</span>
             <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center">
@@ -314,7 +303,7 @@ export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => vo
               {/* Ambient Border Glow Aura on Hover */}
               <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-[2px] -z-10 pointer-events-none" />
 
-              <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 group-hover:border-transparent shadow-sm group-hover:shadow-[0_12px_30px_-5px_rgba(99,102,241,0.2)] flex flex-col justify-between h-full transition-all duration-300">
+              <div className="bg-white/75 dark:bg-slate-900/65 backdrop-blur-xl p-5 rounded-2xl border border-slate-200/80 dark:border-white/10 group-hover:border-indigo-400/50 dark:group-hover:border-indigo-400/40 shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] group-hover:shadow-[0_16px_36px_-4px_rgba(99,102,241,0.25)] flex flex-col justify-between h-full transition-all duration-300">
                 <div>
                   <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-2">
                     <span className="font-semibold text-indigo-600 dark:text-indigo-400">{course.category}</span>
@@ -324,7 +313,7 @@ export const DashboardView: React.FC<{ onRouteChange: (route: ActiveRoute) => vo
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{course.description}</p>
                 </div>
 
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div className="mt-4 pt-3 border-t border-slate-200/70 dark:border-white/10 flex items-center justify-between">
                   <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                     {course.instructor}
                   </span>

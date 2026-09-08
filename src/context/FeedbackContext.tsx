@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { FeedbackMessage, FeedbackStatus } from '../types';
 import { playNotificationSound } from '../utils/audio';
+import { saveFeedbackToFirestore } from '../lib/firebase';
 
 interface FeedbackContextType {
   feedbacks: FeedbackMessage[];
@@ -136,6 +137,9 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
     };
 
     setFeedbacks((prev) => [newFeedback, ...prev]);
+    saveFeedbackToFirestore(newFeedback).catch((e) => {
+      console.warn('Feedback Firestore save note:', e);
+    });
 
     // Play pleasant success audio chime
     playNotificationSound('success');

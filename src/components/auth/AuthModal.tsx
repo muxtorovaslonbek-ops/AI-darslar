@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   Database,
 } from 'lucide-react';
-import { GoogleAccountChooserModal } from './GoogleAccountChooserModal';
 
 interface AuthModalProps {
   onSuccess?: () => void;
@@ -26,6 +25,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
     register,
     login,
     loginWithGoogle,
+    loginWithFirebaseGoogle,
     loginWithGmail,
     loginWithTelegram,
     loginAsAdminWithCredentials,
@@ -53,7 +53,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGoogleChooserOpen, setIsGoogleChooserOpen] = useState(false);
+
+  // Direct real Google Firebase OAuth login
+  const handleRealGoogleAuth = async () => {
+    setError(null);
+    setSuccessMsg(null);
+    setIsSubmitting(true);
+    try {
+      const success = await loginWithFirebaseGoogle();
+      if (success) {
+        setSuccessMsg("Google hisobingiz orqali muvaffaqiyatli kirdingiz!");
+        setTimeout(() => {
+          if (onSuccess) onSuccess();
+        }, 400);
+      } else {
+        setError("Google orqali kirish amalga oshmadi yoki bekor qilindi.");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "Google hisobi bilan ulanishda xatolik yuz berdi.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -402,7 +424,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
                   <KeyRound className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <span>
-                    <strong>Administrator Kirish:</strong> Kurslar, darslar va talabalar hisobini tasdiqlash uchun maxsus login va parolingizni kiriting.
+                    <strong>Administrator Kirish:</strong> login: <span className="font-mono font-bold">aslonbek0722</span>, parol: <span className="font-mono font-bold">aslonbek2207</span>
                   </span>
                 </div>
 
@@ -417,7 +439,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                       required
                       value={adminLogin}
                       onChange={(e) => setAdminLogin(e.target.value)}
-                      placeholder="admin yoki aslonbek"
+                      placeholder="aslonbek0722"
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
                     />
                   </div>
@@ -434,7 +456,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                       required
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
-                      placeholder="Administrator paroli"
+                      placeholder="aslonbek2207"
                       className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                     />
                     <button
@@ -508,24 +530,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                 {/* Method-Specific Input */}
                 {authMethod === 'google' && (
                   <div className="space-y-2.5">
-                    <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleRealGoogleAuth}
+                      disabled={isSubmitting}
+                      className="w-full py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-indigo-500 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <div className="w-4 h-4 flex items-center justify-center shrink-0">
                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
                           <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z" />
                           <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z" />
                           <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z" />
                           <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z" />
                         </svg>
-                        <span>Google hisoblaridan tanlash</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setIsGoogleChooserOpen(true)}
-                        className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-bold text-[11px] hover:border-indigo-500 shadow-sm cursor-pointer"
-                      >
-                        Tanlash
-                      </button>
-                    </div>
+                      </div>
+                      <span>Google hisobingiz orqali real ro'yxatdan o'tish</span>
+                    </button>
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -630,24 +650,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
               <>
                 {authMethod === 'google' && (
                   <div className="space-y-2.5">
-                    <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handleRealGoogleAuth}
+                      disabled={isSubmitting}
+                      className="w-full py-2.5 px-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:border-indigo-500 text-slate-800 dark:text-slate-100 font-bold text-xs shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <div className="w-4 h-4 flex items-center justify-center shrink-0">
                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
                           <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.66v3.05h3.87c2.26-2.09 3.675-5.17 3.675-9.15z" />
                           <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.87-3.05c-1.08.72-2.45 1.16-4.06 1.16-3.13 0-5.78-2.11-6.73-4.96H1.25v3.15C3.26 21.36 7.34 24 12 24z" />
                           <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.61H1.25C.45 8.24 0 10.06 0 12s.45 3.76 1.25 5.39l4.02-3.15z" />
                           <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.61l4.02 3.15c.95-2.85 3.6-4.96 6.73-4.96z" />
                         </svg>
-                        <span>Google hisoblaridan tanlash</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setIsGoogleChooserOpen(true)}
-                        className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 font-bold text-[11px] hover:border-indigo-500 shadow-sm cursor-pointer"
-                      >
-                        Tanlash
-                      </button>
-                    </div>
+                      </div>
+                      <span>Google hisobi orqali to'g'ridan-to'g'ri kirish (Firebase OAuth)</span>
+                    </button>
 
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -734,16 +752,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
           </div>
         </div>
       </div>
-
-      {/* Google Account Selector Dialog */}
-      <GoogleAccountChooserModal
-        isOpen={isGoogleChooserOpen}
-        onClose={() => setIsGoogleChooserOpen(false)}
-        onSuccess={() => {
-          if (onSuccess) onSuccess();
-        }}
-        mode={authMode === 'login' ? 'login' : 'register'}
-      />
     </div>
   );
 };
