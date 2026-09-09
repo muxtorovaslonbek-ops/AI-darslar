@@ -2,6 +2,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Announcement } from '../types';
 import { INITIAL_ANNOUNCEMENTS } from '../data/mockData';
 import { playNotificationSound } from '../utils/audio';
+import {
+  saveAnnouncementToFirestore,
+  updateAnnouncementInFirestore,
+  deleteAnnouncementFromFirestore,
+  subscribeToFirebaseAnnouncements,
+} from '../lib/firebase';
 
 interface AnnouncementContextType {
   announcements: Announcement[];
@@ -24,13 +30,34 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
     const saved = localStorage.getItem('eduplatform-announcements');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Filter out dummy "salom" announcements
+          return parsed.filter(
+            (a: Announcement) =>
+              !a.title.toLowerCase().includes('salom') &&
+              !a.message.toLowerCase().includes('salom')
+          );
+        }
       } catch (e) {
         console.error('Failed to parse announcements', e);
       }
     }
     return INITIAL_ANNOUNCEMENTS;
   });
+
+  // Subscribe to real Firestore announcements
+  useEffect(() => {
+    const unsubscribe = subscribeToFirebaseAnnouncements((firestoreList) => {
+      if (firestoreList && firestoreList.length > 0) {
+        const filtered = firestoreList.filter(
+          (a) => !a.title.toLowerCase().includes('salom') && !a.message.toLowerCase().includes('salom')
+        );
+        setAnnouncements(filtered);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const [readIds, setReadIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('eduplatform-read-announcements');
@@ -60,7 +87,6 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
           const updated: Announcement[] = JSON.parse(e.newValue);
           setAnnouncements((current) => {
             if (updated.length > current.length) {
-              // A new announcement arrived! Play chime sound
               playNotificationSound('chime');
             }
             return updated;
@@ -95,6 +121,9 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
       isPinned,
     };
     setAnnouncements((prev) => [newAnn, ...prev]);
+    saveAnnouncementToFirestore(newAnn).catch((e) => {
+      console.warn('Announcement Firestore save note:', e);
+    });
     // Play sound notification immediately when announcement is sent/arrives
     playNotificationSound();
   };
@@ -103,14 +132,23 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
     setAnnouncements((prev) =>
       prev.map((a) => (a.id === id ? { ...a, ...updates } : a))
     );
+    updateAnnouncementInFirestore(id, updates).catch((e) => {
+      console.warn('Announcement Firestore update note:', e);
+    });
   };
 
   const deleteAnnouncement = (id: string) => {
     setAnnouncements((prev) => prev.filter((a) => a.id !== id));
     setReadIds((prev) => prev.filter((item) => item !== id));
+    deleteAnnouncementFromFirestore(id).catch((e) => {
+      console.warn('Announcement Firestore delete note:', e);
+    });
   };
 
   const clearAllAnnouncements = () => {
+    announcements.forEach((a) => {
+      deleteAnnouncementFromFirestore(a.id).catch(() => {});
+    });
     setAnnouncements([]);
     setReadIds([]);
     localStorage.removeItem('eduplatform-announcements');
@@ -118,9 +156,14 @@ export function AnnouncementProvider({ children }: { children: React.ReactNode }
   };
 
   const togglePinAnnouncement = (id: string) => {
-    setAnnouncements((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, isPinned: !a.isPinned } : a))
-    );
+    setAnnouncements((prev) => {
+      const updated = prev.map((a) => (a.id === id ? { ...a, isPinned: !a.isPinned } : a));
+      const target = updated.find((a) => a.id === id);
+      if (target) {
+        updateAnnouncementInFirestore(id, { isPinned: target.isPinned }).catch(() => {});
+      }
+      return updated;
+    });
   };
 
   const markAsRead = (id: string) => {

@@ -81,9 +81,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             phoneNumber: '+998 90 123 45 67',
             bio: "AI Future platformasi asoschisi va bosh ma'muri.",
           };
-          return parsed;
+          return parsed.filter((u: User) => !u.id.startsWith('demo-'));
         }
-        return [INITIAL_USERS[0], ...parsed];
+        return [INITIAL_USERS[0], ...parsed.filter((u: User) => !u.id.startsWith('demo-'))];
       } catch (e) {
         console.error('Failed to parse saved users', e);
       }
@@ -525,7 +525,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!isValid) {
       return {
         success: false,
-        error: "Noto'g'ri administrator login yoki parol! (Admin login: aslonbek0722, parol: aslonbek2207)",
+        error: "Noto'g'ri administrator login yoki parol kiritildi!",
       };
     }
 

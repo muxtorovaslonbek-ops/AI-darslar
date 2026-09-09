@@ -5,6 +5,7 @@ import { ShieldAlert, CheckCircle } from 'lucide-react';
 interface ProtectedVideoPlayerProps {
   videoId?: string;
   libraryId?: string;
+  directUrl?: string;
   onEnded?: () => void;
   onCompleted?: () => void;
   isCompleted?: boolean;
@@ -14,20 +15,22 @@ interface ProtectedVideoPlayerProps {
 }
 
 export const ProtectedVideoPlayer: React.FC<ProtectedVideoPlayerProps> = ({
-  videoId = '4a5e3f42-4f05-4c07-9b22-861c8a1495c2',
+  videoId,
   libraryId = '380785',
+  directUrl,
   onEnded,
   onCompleted,
   isCompleted,
 }) => {
   const { user, profile, currentUser } = useAuth();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const activeVideoId = videoId || '4a5e3f42-4f05-4c07-9b22-861c8a1495c2';
   const activeLibraryId = libraryId || '380785';
 
   // Bunny.net iframe URL with secure parameters
-  const videoUrl = `https://iframe.mediadelivery.net/embed/${activeLibraryId}/${activeVideoId}?autoplay=false&loop=false&muted=false&preload=true&responsive=true`;
+  const bunnyUrl = `https://iframe.mediadelivery.net/embed/${activeLibraryId}/${activeVideoId}?autoplay=false&loop=false&muted=false&preload=true&responsive=true`;
 
   const handleEnd = () => {
     if (onEnded) onEnded();
@@ -51,16 +54,27 @@ export const ProtectedVideoPlayer: React.FC<ProtectedVideoPlayerProps> = ({
         </div>
       </div>
 
-      {/* Video Player Frame */}
-      <iframe
-        ref={iframeRef}
-        src={videoUrl}
-        loading="lazy"
-        className="w-full h-full border-0 pointer-events-auto"
-        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-        allowFullScreen
-        onEnded={handleEnd}
-      />
+      {/* Direct Video or Bunny.net Player */}
+      {directUrl ? (
+        <video
+          ref={videoRef}
+          src={directUrl}
+          controls
+          controlsList="nodownload"
+          onEnded={handleEnd}
+          className="w-full h-full object-contain pointer-events-auto bg-black"
+        />
+      ) : (
+        <iframe
+          ref={iframeRef}
+          src={bunnyUrl}
+          loading="lazy"
+          className="w-full h-full border-0 pointer-events-auto"
+          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+          allowFullScreen
+          onEnded={handleEnd}
+        />
+      )}
 
       {/* Context Menu / Download Disable Shield */}
       <div 

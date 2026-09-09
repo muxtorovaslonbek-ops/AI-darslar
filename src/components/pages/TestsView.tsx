@@ -24,7 +24,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
   onNavigateToAdmin,
 }) => {
   const { currentUser } = useAuth();
-  const { quizzes } = useCourses();
+  const { quizzes, selectedQuizId, setSelectedQuizId } = useCourses();
 
   const isLocked = !currentUser || currentUser.status === 'pending' || currentUser.status === 'rejected';
 
@@ -35,6 +35,20 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [showCertificate, setShowCertificate] = useState(false);
+
+  // Synchronize with selectedQuizId
+  useEffect(() => {
+    if (selectedQuizId) {
+      const target = quizzes.find((q) => q.id === selectedQuizId);
+      if (target) {
+        setActiveQuiz(target);
+        setCurrentQuestionIndex(0);
+        setSelectedAnswers({});
+        setIsSubmitted(false);
+        setShowCertificate(false);
+      }
+    }
+  }, [selectedQuizId, quizzes]);
 
   useEffect(() => {
     if (!activeQuiz || isSubmitted) return;
@@ -256,6 +270,7 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
               <button
                 onClick={() => {
                   if (window.confirm("Testdan chiqishni xohlaysizmi? Natijalar saqlanmaydi.")) {
+                    setSelectedQuizId(null);
                     setActiveQuiz(null);
                   }
                 }}
@@ -487,7 +502,10 @@ export const TestsView: React.FC<{ onNavigateToAdmin?: () => void }> = ({
                         <span>Qayta topshirish</span>
                       </button>
                       <button
-                        onClick={() => setActiveQuiz(null)}
+                        onClick={() => {
+                          setSelectedQuizId(null);
+                          setActiveQuiz(null);
+                        }}
                         className="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold cursor-pointer"
                       >
                         Barcha testlarga qaytish

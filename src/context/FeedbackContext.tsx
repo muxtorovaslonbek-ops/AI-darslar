@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { FeedbackMessage, FeedbackStatus } from '../types';
 import { playNotificationSound } from '../utils/audio';
-import { saveFeedbackToFirestore } from '../lib/firebase';
+import {
+  saveFeedbackToFirestore,
+  updateFeedbackInFirestore,
+  deleteFeedbackFromFirestore,
+  subscribeToFirebaseFeedbacks,
+} from '../lib/firebase';
 
 interface FeedbackContextType {
   feedbacks: FeedbackMessage[];
@@ -23,46 +28,7 @@ interface FeedbackContextType {
   clearAllFeedbacks: () => void;
 }
 
-const INITIAL_FEEDBACKS: FeedbackMessage[] = [
-  {
-    id: 'fb-1',
-    userName: 'Akmal Karimov',
-    userEmail: 'akmal.dev@gmail.com',
-    userPhone: '+998 90 345 67 89',
-    userTelegram: '@akmal_tech',
-    type: 'suggestion',
-    subject: 'Python va FastAPI bo\'yicha yangi kurs qo\'shilsa ajoyib bo\'lardi',
-    message: 'Assalomu alaykum! Platformangiz juda qulay va dizayni yoqimli. Taklifim shuki, backend yo\'nalishida Python va FastAPI orqali mikroxizmatlar yaratish bo\'yicha ham darslar bo\'lsa, talabalarga juda katta yordam bo\'lardi.',
-    rating: 5,
-    status: 'new',
-    createdAt: 'Bugun, 10:45',
-  },
-  {
-    id: 'fb-2',
-    userName: 'Dilnoza Salimova',
-    userEmail: 'dilnoza.ai@gmail.com',
-    userTelegram: '@dilnoza_s',
-    type: 'request',
-    subject: 'Darslar yakunida sertifikat yuklab olish imkoniyati',
-    message: 'Salom admin jamoasi. Kursdagi barcha test va darslarni 100% tamomlagan talabalarga PDF formatida shaxsiy QR-kodli sertifikat berish tizimini qo\'shishingizni so\'rayman.',
-    rating: 5,
-    status: 'reviewed',
-    adminReply: 'Taklifingiz uchun rahmat! Ushbu funksiya keyingi versiya yangilanishimiz rejasiga kiritildi.',
-    adminRepliedAt: 'Bugun, 11:20',
-    createdAt: 'Kecha, 16:30',
-  },
-  {
-    id: 'fb-3',
-    userName: 'Jamshid Ergashev',
-    userPhone: '+998 97 123 45 67',
-    type: 'opinion',
-    subject: 'Platformaning qorong\'u va yorug\'lik rejimi juda chiroyli chiqibdi',
-    message: 'Menga ayniqsa yangi qorong\'u rejimdagi kontrast va shriftlar juda yoqdi. Ko\'zni toliqtirmaydi, darslarni tuni bilan bemalol o\'qish mumkin. Rahmat!',
-    rating: 5,
-    status: 'resolved',
-    createdAt: '2 kun oldin',
-  },
-];
+const INITIAL_FEEDBACKS: FeedbackMessage[] = [];
 
 const FeedbackContext = createContext<FeedbackContextType | undefined>(undefined);
 
@@ -71,13 +37,27 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('eduplatform-feedbacks');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // Filter out old demo feedbacks if present
+          return parsed.filter((fb: FeedbackMessage) => !['fb-1', 'fb-2', 'fb-3'].includes(fb.id));
+        }
       } catch (e) {
         console.error('Failed to parse saved feedbacks', e);
       }
     }
     return INITIAL_FEEDBACKS;
   });
+
+  // Subscribe to real Firestore feedbacks
+  useEffect(() => {
+    const unsubscribe = subscribeToFirebaseFeedbacks((firestoreFeedbacks) => {
+      if (firestoreFeedbacks && firestoreFeedbacks.length > 0) {
+        setFeedbacks(firestoreFeedbacks);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('eduplatform-feedbacks', JSON.stringify(feedbacks));
@@ -91,7 +71,6 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
           const updated: FeedbackMessage[] = JSON.parse(e.newValue);
           setFeedbacks((curr) => {
             if (updated.length > curr.length) {
-              // Admin hears alert chime when student posts a new request/feedback
               playNotificationSound('alert');
             }
             return updated;
@@ -149,35 +128,51 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
     setFeedbacks((prev) =>
       prev.map((fb) => (fb.id === id ? { ...fb, status } : fb))
     );
+    updateFeedbackInFirestore(id, { status }).catch((e) => {
+      console.warn('Feedback status Firestore update note:', e);
+    });
   };
 
   const replyToFeedback = (id: string, replyText: string) => {
+    const replyDate = new Date().toLocaleDateString('uz-UZ', {
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
     setFeedbacks((prev) =>
       prev.map((fb) =>
         fb.id === id
           ? {
               ...fb,
               adminReply: replyText.trim(),
-              adminRepliedAt: new Date().toLocaleDateString('uz-UZ', {
-                day: 'numeric',
-                month: 'long',
-                hour: '2-digit',
-                minute: '2-digit',
-              }),
+              adminRepliedAt: replyDate,
               status: 'resolved',
             }
           : fb
       )
     );
-    // Play chime for reply sent
+    updateFeedbackInFirestore(id, {
+      adminReply: replyText.trim(),
+      adminRepliedAt: replyDate,
+      status: 'resolved',
+    }).catch((e) => {
+      console.warn('Feedback reply Firestore update note:', e);
+    });
     playNotificationSound('chime');
   };
 
   const deleteFeedback = (id: string) => {
     setFeedbacks((prev) => prev.filter((fb) => fb.id !== id));
+    deleteFeedbackFromFirestore(id).catch((e) => {
+      console.warn('Feedback delete Firestore note:', e);
+    });
   };
 
   const clearAllFeedbacks = () => {
+    feedbacks.forEach((fb) => {
+      deleteFeedbackFromFirestore(fb.id).catch(() => {});
+    });
     setFeedbacks([]);
     localStorage.removeItem('eduplatform-feedbacks');
   };

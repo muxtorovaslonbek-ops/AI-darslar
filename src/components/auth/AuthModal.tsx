@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { TelegramBotAuthWidget } from './TelegramBotAuthWidget';
+import { TelegramAuthSession } from '../../lib/telegramBot';
 import {
   User as UserIcon,
   Phone,
@@ -72,6 +74,38 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(msg || "Google hisobi bilan ulanishda xatolik yuz berdi.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleTelegramVerified = async (code: string, session?: TelegramAuthSession) => {
+    setError(null);
+    setSuccessMsg(null);
+    setIsSubmitting(true);
+    try {
+      const handle = session?.telegramHandle || telegramHandle;
+      if (authMode === 'register') {
+        const fullName = `${firstName.trim()} ${lastName.trim()}`.trim() || `${session?.firstName || ''} ${session?.lastName || ''}`.trim() || 'Telegram Foydalanuvchisi';
+        const phone = phoneNumber.trim() || session?.phoneNumber || undefined;
+        await loginWithTelegram(handle, fullName, phone);
+        setSuccessMsg("Telegram (@edusatbot) kodi tasdiqlandi va arizangiz qabul qilindi!");
+      } else {
+        const success = await loginWithTelegram(handle);
+        if (success) {
+          setSuccessMsg("Telegram (@edusatbot) orqali kirdingiz!");
+        } else {
+          setError("Bunday Telegram hisobli foydalanuvchi topilmadi. Iltimos, avval ro'yxatdan o'ting.");
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      setTimeout(() => {
+        if (onSuccess) onSuccess();
+      }, 500);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(msg || "Telegram orqali tasdiqlashda xatolik yuz berdi");
     } finally {
       setIsSubmitting(false);
     }
@@ -424,7 +458,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                 <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
                   <KeyRound className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <span>
-                    <strong>Administrator Kirish:</strong> login: <span className="font-mono font-bold">aslonbek0722</span>, parol: <span className="font-mono font-bold">aslonbek2207</span>
+                    <strong>Administrator Xavfsiz Boshqaruvi:</strong> Ushbu bo'lim faqat platforma ma'murlari uchun mo'ljallangan. Maxsus hisob ma'lumotlaringizni kiriting.
                   </span>
                 </div>
 
@@ -439,7 +473,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                       required
                       value={adminLogin}
                       onChange={(e) => setAdminLogin(e.target.value)}
-                      placeholder="aslonbek0722"
+                      placeholder="Login kiriting"
                       className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
                     />
                   </div>
@@ -456,8 +490,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                       required
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
-                      placeholder="aslonbek2207"
-                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="••••••••"
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
                     />
                     <button
                       type="button"
@@ -592,56 +626,51 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                   </div>
                 )}
 
-                {authMethod === 'telegram' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Telegram Username (@username) <span className="text-sky-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <span className="w-4 h-4 text-sky-500 absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-mono">@</span>
-                      <input
-                        type="text"
-                        required
-                        value={telegramHandle}
-                        onChange={(e) => setTelegramHandle(e.target.value)}
-                        placeholder="@username"
-                        className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                      />
+                {authMethod === 'telegram' ? (
+                  <TelegramBotAuthWidget
+                    mode="register"
+                    firstName={firstName}
+                    lastName={lastName}
+                    phoneNumber={phoneNumber}
+                    telegramHandle={telegramHandle}
+                    setTelegramHandle={setTelegramHandle}
+                    onVerified={handleTelegramVerified}
+                    isSubmitting={isSubmitting}
+                    onError={setError}
+                  />
+                ) : (
+                  <>
+                    {/* Optional Phone Number */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        Telefon Raqami (Bog'lanish uchun)
+                      </label>
+                      <div className="relative">
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="+998 90 123 45 67"
+                          className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                        />
+                      </div>
                     </div>
-                  </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/20 transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
+                    >
+                      <span>
+                        {authMethod === 'google'
+                          ? "Google bilan Ro'yxatdan O'tish"
+                          : "Gmail bilan Ro'yxatdan O'tish"}
+                      </span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
-
-                {/* Optional Phone Number */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Telefon Raqami (Bog'lanish uchun)
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="+998 90 123 45 67"
-                      className="w-full pl-10 pr-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-500/20 transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
-                >
-                  <span>
-                    {authMethod === 'google'
-                      ? "Google bilan Ro'yxatdan O'tish"
-                      : authMethod === 'telegram'
-                      ? "Telegram bilan Ro'yxatdan O'tish"
-                      : "Gmail bilan Ro'yxatdan O'tish"}
-                  </span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
               </>
             )}
 
@@ -712,33 +741,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ onSuccess }) => {
                   </div>
                 )}
 
-                {authMethod === 'telegram' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Telegram Username (@username)
-                    </label>
-                    <div className="relative">
-                      <span className="w-4 h-4 text-sky-500 absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-mono">@</span>
-                      <input
-                        type="text"
-                        required
-                        value={telegramHandle}
-                        onChange={(e) => setTelegramHandle(e.target.value)}
-                        placeholder="@username"
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                      />
-                    </div>
-                  </div>
+                {authMethod === 'telegram' ? (
+                  <TelegramBotAuthWidget
+                    mode="login"
+                    telegramHandle={telegramHandle}
+                    setTelegramHandle={setTelegramHandle}
+                    onVerified={handleTelegramVerified}
+                    isSubmitting={isSubmitting}
+                    onError={setError}
+                  />
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-semibold shadow-md transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
+                  >
+                    <span>Platformaga Kirish</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 )}
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-semibold shadow-md transition flex items-center justify-center gap-2 mt-2 cursor-pointer"
-                >
-                  <span>Platformaga Kirish</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
               </>
             )}
           </form>

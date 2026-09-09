@@ -79,6 +79,18 @@ export const Navbar: React.FC<NavbarProps> = ({
     }
   };
 
+  // Listen for flying announcement landing on bell
+  const [isBellHighlight, setIsBellHighlight] = useState(false);
+
+  useEffect(() => {
+    const handleHighlight = () => {
+      setIsBellHighlight(true);
+      setTimeout(() => setIsBellHighlight(false), 3500);
+    };
+    window.addEventListener('highlight_notification_bell', handleHighlight);
+    return () => window.removeEventListener('highlight_notification_bell', handleHighlight);
+  }, []);
+
   // Close notifications dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -185,14 +197,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="navbar-notifications-bell-btn"
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition-colors relative cursor-pointer"
+              className={`p-2.5 rounded-xl border transition-all relative cursor-pointer ${
+                isBellHighlight
+                  ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-950 border-indigo-500 ring-4 ring-indigo-500/40 scale-110 shadow-lg shadow-indigo-500/30 animate-bounce'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+              }`}
               title="Admin Bildirishnomalari"
               aria-label="Bildirishnomalar"
             >
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
+              <Bell className={`w-4 h-4 ${isBellHighlight ? 'text-indigo-600 dark:text-indigo-400 animate-spin' : ''}`} />
+              {(unreadCount > 0 || isBellHighlight) && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white rounded-full text-[10px] font-bold flex items-center justify-center ring-2 ring-white dark:ring-slate-900 animate-pulse">
-                  {unreadCount > 9 ? '9+' : unreadCount}
+                  {unreadCount > 0 ? (unreadCount > 9 ? '9+' : unreadCount) : '1'}
                 </span>
               )}
             </button>

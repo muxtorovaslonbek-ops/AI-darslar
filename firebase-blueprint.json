@@ -119,7 +119,7 @@
         "adminRepliedAt": { "type": "string" },
         "createdAt": { "type": "string" }
       },
-      "required": ["id", "userId", "userName", "type", "subject", "message", "status"]
+      "required": ["id", "userName", "type", "subject", "message", "status"]
     },
     "TestResult": {
       "title": "TestResult",

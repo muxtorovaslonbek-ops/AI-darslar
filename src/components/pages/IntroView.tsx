@@ -28,6 +28,8 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { ActiveRoute } from '../../types';
+import { TelegramBotAuthWidget } from '../auth/TelegramBotAuthWidget';
+import { TelegramAuthSession } from '../../lib/telegramBot';
 import { NeonButton } from '../common/NeonButton';
 import { AmbientGlow } from '../common/AmbientGlow';
 
@@ -206,6 +208,38 @@ export const IntroView: React.FC<IntroViewProps> = ({
     const el = document.getElementById('intro-auth-portal-section');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleTelegramVerified = async (code: string, session?: TelegramAuthSession) => {
+    setAuthError(null);
+    setAuthSuccess(null);
+    setIsSubmitting(true);
+    try {
+      const handle = session?.telegramHandle || telegramHandle;
+      if (authMode === 'register') {
+        const fullName = `${firstName.trim()} ${lastName.trim()}`.trim() || `${session?.firstName || ''} ${session?.lastName || ''}`.trim() || 'Telegram Foydalanuvchisi';
+        const phone = phoneNumber.trim() || session?.phoneNumber || undefined;
+        await loginWithTelegram(handle, fullName, phone);
+        setAuthSuccess("Telegram (@edusatbot) orqali kodingiz tasdiqlandi va ro'yxatdan o'tdingiz!");
+      } else {
+        const success = await loginWithTelegram(handle);
+        if (success) {
+          setAuthSuccess("Telegram (@edusatbot) orqali tizimga muvaffaqiyatli kirdingiz!");
+        } else {
+          setAuthError("Bunday Telegram foydalanuvchisi topilmadi. Iltimos, avval ro'yxatdan o'ting.");
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      setTimeout(() => {
+        if (onSuccessAuth) onSuccessAuth();
+      }, 500);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setAuthError(msg || "Telegram orqali tasdiqlashda xatolik yuz berdi");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -1022,68 +1056,59 @@ export const IntroView: React.FC<IntroViewProps> = ({
                   </div>
                 )}
 
-                {authMethod === 'telegram' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Telegram Username (@username) <span className="text-rose-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="w-4 h-4 text-[#229ED9] absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
-                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.926z" />
-                        </svg>
+                {authMethod === 'telegram' ? (
+                  <TelegramBotAuthWidget
+                    mode="register"
+                    firstName={firstName}
+                    lastName={lastName}
+                    phoneNumber={phoneNumber}
+                    telegramHandle={telegramHandle}
+                    setTelegramHandle={setTelegramHandle}
+                    onVerified={handleTelegramVerified}
+                    isSubmitting={isSubmitting}
+                    onError={setAuthError}
+                  />
+                ) : (
+                  <>
+                    {/* Phone Number Input */}
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        Telefon Raqami (Bog'lanish uchun)
+                      </label>
+                      <div className="relative">
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="+998 90 123 45 67"
+                          className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
                       </div>
-                      <input
-                        type="text"
-                        required
-                        value={telegramHandle}
-                        onChange={(e) => setTelegramHandle(e.target.value)}
-                        placeholder="@username"
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                        Administrator siz bilan bog'lanishi va arizangizni tasdiqlashi uchun telefon raqamingizni kiriting.
+                      </p>
                     </div>
-                  </div>
+
+                    <NeonButton
+                      type="submit"
+                      disabled={isSubmitting}
+                      variant="primary-gradient"
+                      size="md"
+                      fullWidth
+                      containerClassName="mt-3"
+                      rightIcon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      <span>
+                        {isSubmitting
+                          ? "Yuklanmoqda..."
+                          : authMethod === 'google'
+                          ? "Google bilan Ro'yxatdan O'tish"
+                          : "Gmail bilan Ro'yxatdan O'tish"}
+                      </span>
+                    </NeonButton>
+                  </>
                 )}
-
-                {/* Phone Number Input */}
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Telefon Raqami (Bog'lanish uchun)
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="+998 90 123 45 67"
-                      className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
-                    Administrator siz bilan bog'lanishi va arizangizni tasdiqlashi uchun telefon raqamingizni kiriting.
-                  </p>
-                </div>
-
-                <NeonButton
-                  type="submit"
-                  disabled={isSubmitting}
-                  variant="primary-gradient"
-                  size="md"
-                  fullWidth
-                  containerClassName="mt-3"
-                  rightIcon={<ArrowRight className="w-4 h-4" />}
-                >
-                  <span>
-                    {isSubmitting
-                      ? "Yuklanmoqda..."
-                      : authMethod === 'google'
-                      ? "Google bilan Ro'yxatdan O'tish"
-                      : authMethod === 'telegram'
-                      ? "Telegram bilan Ro'yxatdan O'tish"
-                      : "Gmail bilan Ro'yxatdan O'tish"}
-                  </span>
-                </NeonButton>
               </form>
             )}
 
@@ -1164,40 +1189,28 @@ export const IntroView: React.FC<IntroViewProps> = ({
                   </div>
                 )}
 
-                {authMethod === 'telegram' && (
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                      Telegram Username (@username) <span className="text-[#229ED9]">*</span>
-                    </label>
-                    <div className="relative">
-                      <div className="w-4 h-4 text-[#229ED9] absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center">
-                        <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.832.926z" />
-                        </svg>
-                      </div>
-                      <input
-                        type="text"
-                        required
-                        value={telegramHandle}
-                        onChange={(e) => setTelegramHandle(e.target.value)}
-                        placeholder="@username"
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                  </div>
+                {authMethod === 'telegram' ? (
+                  <TelegramBotAuthWidget
+                    mode="login"
+                    telegramHandle={telegramHandle}
+                    setTelegramHandle={setTelegramHandle}
+                    onVerified={handleTelegramVerified}
+                    isSubmitting={isSubmitting}
+                    onError={setAuthError}
+                  />
+                ) : (
+                  <NeonButton
+                    type="submit"
+                    disabled={isSubmitting}
+                    variant="primary-gradient"
+                    size="md"
+                    fullWidth
+                    containerClassName="mt-3"
+                    rightIcon={<ArrowRight className="w-4 h-4" />}
+                  >
+                    <span>{isSubmitting ? "Kirilmoqda..." : "Platformaga Kirish"}</span>
+                  </NeonButton>
                 )}
-
-                <NeonButton
-                  type="submit"
-                  disabled={isSubmitting}
-                  variant="primary-gradient"
-                  size="md"
-                  fullWidth
-                  containerClassName="mt-3"
-                  rightIcon={<ArrowRight className="w-4 h-4" />}
-                >
-                  <span>{isSubmitting ? "Kirilmoqda..." : "Platformaga Kirish"}</span>
-                </NeonButton>
               </form>
             )}
 
@@ -1208,7 +1221,7 @@ export const IntroView: React.FC<IntroViewProps> = ({
                   <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                   <div>
                     <strong className="block font-bold">Administrator Xavfsiz Boshqaruv Tizimi:</strong>
-                    Kurslar, darslar, testlar va talabalar hisobini tasdiqlash uchun maxsus admin login va paroli talab qilinadi (login: <span className="font-mono font-bold">aslonbek0722</span>, parol: <span className="font-mono font-bold">aslonbek2207</span>).
+                    Ushbu bo'lim faqat platforma ma'murlari uchun mo'ljallangan. Maxsus hisob ma'lumotlaringizni kiriting.
                   </div>
                 </div>
 
@@ -1223,7 +1236,7 @@ export const IntroView: React.FC<IntroViewProps> = ({
                       required
                       value={adminLogin}
                       onChange={(e) => setAdminLogin(e.target.value)}
-                      placeholder="aslonbek0722"
+                      placeholder="Login kiriting"
                       className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium font-mono"
                     />
                   </div>
@@ -1240,7 +1253,7 @@ export const IntroView: React.FC<IntroViewProps> = ({
                       required
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
-                      placeholder="aslonbek2207"
+                      placeholder="••••••••"
                       className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"
                     />
                     <button

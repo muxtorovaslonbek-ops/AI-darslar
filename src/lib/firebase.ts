@@ -136,6 +136,21 @@ export async function signOutFirebase(): Promise<void> {
   await firebaseSignOut(auth);
 }
 
+// Helper to recursively remove undefined properties before saving to Firestore
+export function cleanFirestoreData<T extends Record<string, any>>(obj: T): Record<string, any> {
+  const clean: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (value !== undefined) {
+      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+        clean[key] = cleanFirestoreData(value);
+      } else {
+        clean[key] = value;
+      }
+    }
+  }
+  return clean;
+}
+
 // Firestore User Document operations
 export async function getFirebaseUserProfile(userId: string): Promise<User | null> {
   const path = `users/${userId}`;
@@ -153,7 +168,7 @@ export async function getFirebaseUserProfile(userId: string): Promise<User | nul
 export async function upsertFirebaseUserProfile(user: User): Promise<void> {
   const path = `users/${user.id}`;
   try {
-    await setDoc(doc(db, 'users', user.id), user, { merge: true });
+    await setDoc(doc(db, 'users', user.id), cleanFirestoreData(user), { merge: true });
   } catch (err) {
     handleFirestoreError(err, OperationType.WRITE, path);
   }
@@ -162,7 +177,7 @@ export async function upsertFirebaseUserProfile(user: User): Promise<void> {
 export async function updateFirebaseUserProfile(userId: string, updates: Partial<User>): Promise<void> {
   const path = `users/${userId}`;
   try {
-    await updateDoc(doc(db, 'users', userId), updates);
+    await updateDoc(doc(db, 'users', userId), cleanFirestoreData(updates));
   } catch (err) {
     handleFirestoreError(err, OperationType.UPDATE, path);
   }
@@ -210,17 +225,100 @@ export async function fetchFirebaseUsers(): Promise<User[]> {
 export async function saveFeedbackToFirestore(feedback: FeedbackMessage): Promise<void> {
   const path = `feedbacks/${feedback.id}`;
   try {
-    await setDoc(doc(db, 'feedbacks', feedback.id), feedback);
+    await setDoc(doc(db, 'feedbacks', feedback.id), cleanFirestoreData(feedback));
   } catch (err) {
     handleFirestoreError(err, OperationType.CREATE, path);
   }
+}
+
+export async function updateFeedbackInFirestore(feedbackId: string, updates: Partial<FeedbackMessage>): Promise<void> {
+  const path = `feedbacks/${feedbackId}`;
+  try {
+    await updateDoc(doc(db, 'feedbacks', feedbackId), cleanFirestoreData(updates));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, path);
+  }
+}
+
+export async function deleteFeedbackFromFirestore(feedbackId: string): Promise<void> {
+  const path = `feedbacks/${feedbackId}`;
+  try {
+    await deleteDoc(doc(db, 'feedbacks', feedbackId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
+  }
+}
+
+export function subscribeToFirebaseFeedbacks(onFeedbacksUpdated: (feedbacks: FeedbackMessage[]) => void): () => void {
+  const feedbacksCol = collection(db, 'feedbacks');
+  return onSnapshot(
+    feedbacksCol,
+    (snapshot) => {
+      const list: FeedbackMessage[] = [];
+      snapshot.forEach((docSnap) => {
+        list.push(docSnap.data() as FeedbackMessage);
+      });
+      // Sort newest first by created timestamp or id
+      list.sort((a, b) => b.id.localeCompare(a.id));
+      onFeedbacksUpdated(list);
+    },
+    (err) => {
+      console.warn('Firestore feedbacks subscription note:', err);
+    }
+  );
+}
+
+// Firestore Announcements operations
+export async function saveAnnouncementToFirestore(announcement: Announcement): Promise<void> {
+  const path = `announcements/${announcement.id}`;
+  try {
+    await setDoc(doc(db, 'announcements', announcement.id), cleanFirestoreData(announcement));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.CREATE, path);
+  }
+}
+
+export async function updateAnnouncementInFirestore(announcementId: string, updates: Partial<Announcement>): Promise<void> {
+  const path = `announcements/${announcementId}`;
+  try {
+    await updateDoc(doc(db, 'announcements', announcementId), cleanFirestoreData(updates));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, path);
+  }
+}
+
+export async function deleteAnnouncementFromFirestore(announcementId: string): Promise<void> {
+  const path = `announcements/${announcementId}`;
+  try {
+    await deleteDoc(doc(db, 'announcements', announcementId));
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, path);
+  }
+}
+
+export function subscribeToFirebaseAnnouncements(onAnnouncementsUpdated: (announcements: Announcement[]) => void): () => void {
+  const annCol = collection(db, 'announcements');
+  return onSnapshot(
+    annCol,
+    (snapshot) => {
+      const list: Announcement[] = [];
+      snapshot.forEach((docSnap) => {
+        list.push(docSnap.data() as Announcement);
+      });
+      list.sort((a, b) => b.id.localeCompare(a.id));
+      onAnnouncementsUpdated(list);
+    },
+    (err) => {
+      console.warn('Firestore announcements subscription note:', err);
+    }
+  );
 }
 
 // Firestore Test Results operations
 export async function saveTestResultToFirestore(result: TestResult): Promise<void> {
   const path = `test_results/${result.id}`;
   try {
-    await setDoc(doc(db, 'test_results', result.id), result);
+    await setDoc(doc(db, 'test_results', result.id), cleanFirestoreData(result));
   } catch (err) {
     handleFirestoreError(err, OperationType.CREATE, path);
   }

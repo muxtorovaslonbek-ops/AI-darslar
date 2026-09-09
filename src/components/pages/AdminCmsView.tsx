@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useCourses } from '../../context/CourseContext';
 import { useAnnouncements } from '../../context/AnnouncementContext';
@@ -45,7 +45,10 @@ import {
   Filter,
   Volume2,
   VolumeX,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
+import { LessonManagerModal } from '../admin/LessonManagerModal';
 
 export const AdminCmsView: React.FC = () => {
   const { currentUser, users, approveUser, rejectUser, switchUserRoleOrStatus, updateAnyUser, addUser, deleteUser, clearDemoUsers } = useAuth();
@@ -87,6 +90,63 @@ export const AdminCmsView: React.FC = () => {
 
   // Active Admin CMS Tab: 'users' | 'courses' | 'quizzes' | 'announcements' | 'analytics' | 'feedbacks'
   const [activeTab, setActiveTab] = useState<'users' | 'courses' | 'quizzes' | 'announcements' | 'analytics' | 'feedbacks'>('users');
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [isMouseDown, setIsMouseDown] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeftPos, setScrollLeftPos] = useState(0);
+
+  const scrollTabs = (direction: 'left' | 'right') => {
+    if (tabsContainerRef.current) {
+      const scrollAmount = direction === 'left' ? -250 : 250;
+      tabsContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  const handleTabsMouseDown = (e: React.MouseEvent) => {
+    if (!tabsContainerRef.current) return;
+    setIsMouseDown(true);
+    setStartX(e.pageX - tabsContainerRef.current.offsetLeft);
+    setScrollLeftPos(tabsContainerRef.current.scrollLeft);
+  };
+
+  const handleTabsMouseLeave = () => {
+    setIsMouseDown(false);
+  };
+
+  const handleTabsMouseUp = () => {
+    setIsMouseDown(false);
+  };
+
+  const handleTabsMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDown || !tabsContainerRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - tabsContainerRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    tabsContainerRef.current.scrollLeft = scrollLeftPos - walk;
+  };
+
+  const handleTabsWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (tabsContainerRef.current) {
+      tabsContainerRef.current.scrollLeft += e.deltaY;
+    }
+  };
+
+  const selectTab = (tab: typeof activeTab) => {
+    setActiveTab(tab);
+    setTimeout(() => {
+      const activeBtn = document.getElementById(`admin-tab-${tab}`);
+      if (activeBtn && tabsContainerRef.current) {
+        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }, 50);
+  };
+
+  useEffect(() => {
+    const activeBtn = document.getElementById(`admin-tab-${activeTab}`);
+    if (activeBtn && tabsContainerRef.current) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [activeTab]);
 
   // FEEDBACK MANAGEMENT STATE
   const [feedbackSearch, setFeedbackSearch] = useState('');
@@ -577,95 +637,138 @@ export const AdminCmsView: React.FC = () => {
         )}
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
-        <button
-          id="admin-tab-users"
-          onClick={() => setActiveTab('users')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'users'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>Talabalar Boshqaruvi</span>
-          {pendingUsersCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-slate-900">
-              {pendingUsersCount}
-            </span>
-          )}
-        </button>
+      {/* Navigation Tabs with Smooth Horizontal Scroll and Arrow Controls */}
+      <div className="relative border-b border-slate-200 dark:border-slate-800 pb-2">
+        <div className="flex items-center gap-1.5">
+          {/* Left Scroll Arrow (Visible on all devices for fast navigation) */}
+          <button
+            type="button"
+            onClick={() => scrollTabs('left')}
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 shadow-sm shrink-0 cursor-pointer transition-all active:scale-95"
+            title="Chapga surish"
+            aria-label="Chapga surish"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
 
-        <button
-          id="admin-tab-courses"
-          onClick={() => setActiveTab('courses')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'courses'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <BookOpen className="w-4 h-4" />
-          <span>Kurslar va Darslar ({courses.length})</span>
-        </button>
+          {/* Scrollable Tabs Track */}
+          <div
+            ref={tabsContainerRef}
+            onWheel={handleTabsWheel}
+            onMouseDown={handleTabsMouseDown}
+            onMouseLeave={handleTabsMouseLeave}
+            onMouseUp={handleTabsMouseUp}
+            onMouseMove={handleTabsMouseMove}
+            className={`flex-1 flex items-center gap-2 overflow-x-auto scroll-smooth py-1 px-1 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 select-none touch-pan-x ${
+              isMouseDown ? 'cursor-grabbing' : 'cursor-grab'
+            }`}
+          >
+            <button
+              id="admin-tab-users"
+              type="button"
+              onClick={() => selectTab('users')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
+                activeTab === 'users'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Talabalar Boshqaruvi</span>
+              {pendingUsersCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-slate-900">
+                  {pendingUsersCount}
+                </span>
+              )}
+            </button>
 
-        <button
-          id="admin-tab-quizzes"
-          onClick={() => setActiveTab('quizzes')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'quizzes'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <HelpCircle className="w-4 h-4" />
-          <span>Interaktiv Testlar ({quizzes.length})</span>
-        </button>
+            <button
+              id="admin-tab-courses"
+              type="button"
+              onClick={() => selectTab('courses')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
+                activeTab === 'courses'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Kurslar va Darslar ({courses.length})</span>
+            </button>
 
-        <button
-          id="admin-tab-announcements"
-          onClick={() => setActiveTab('announcements')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'announcements'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <Megaphone className="w-4 h-4" />
-          <span>E'lonlar ({announcements.length})</span>
-        </button>
+            <button
+              id="admin-tab-quizzes"
+              type="button"
+              onClick={() => selectTab('quizzes')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
+                activeTab === 'quizzes'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <HelpCircle className="w-4 h-4" />
+              <span>Interaktiv Testlar ({quizzes.length})</span>
+            </button>
 
-        <button
-          id="admin-tab-feedbacks"
-          onClick={() => setActiveTab('feedbacks')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'feedbacks'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <MessageSquarePlus className="w-4 h-4" />
-          <span>Murojaat va Takliflar ({feedbacks.length})</span>
-          {unreadFeedbacksCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white animate-pulse">
-              {unreadFeedbacksCount} yangi
-            </span>
-          )}
-        </button>
+            <button
+              id="admin-tab-announcements"
+              type="button"
+              onClick={() => selectTab('announcements')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
+                activeTab === 'announcements'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Megaphone className="w-4 h-4" />
+              <span>E'lonlar ({announcements.length})</span>
+            </button>
 
-        <button
-          id="admin-tab-analytics"
-          onClick={() => setActiveTab('analytics')}
-          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-            activeTab === 'analytics'
-              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span>Statistika & Tizim</span>
-        </button>
+            <button
+              id="admin-tab-feedbacks"
+              type="button"
+              onClick={() => selectTab('feedbacks')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
+                activeTab === 'feedbacks'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <MessageSquarePlus className="w-4 h-4" />
+              <span>Murojaat va Takliflar ({feedbacks.length})</span>
+              {unreadFeedbacksCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white animate-pulse">
+                  {unreadFeedbacksCount} yangi
+                </span>
+              )}
+            </button>
+
+            <button
+              id="admin-tab-analytics"
+              type="button"
+              onClick={() => selectTab('analytics')}
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap cursor-pointer ${
+                activeTab === 'analytics'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Statistika & Tizim</span>
+            </button>
+          </div>
+
+          {/* Right Scroll Arrow (Visible on all devices) */}
+          <button
+            type="button"
+            onClick={() => scrollTabs('right')}
+            className="flex items-center justify-center w-8 h-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 shadow-sm shrink-0 cursor-pointer transition-all active:scale-95"
+            title="O'ngga surish"
+            aria-label="O'ngga surish"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* ========================================================================= */}
@@ -1506,8 +1609,8 @@ export const AdminCmsView: React.FC = () => {
               </div>
 
               {/* Status Filter */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-xs text-slate-400 font-medium mr-1 flex items-center gap-1">
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-thin py-0.5">
+                <span className="text-xs text-slate-400 font-medium mr-1 flex items-center gap-1 shrink-0">
                   <Filter className="w-3.5 h-3.5" />
                   Holat:
                 </span>
@@ -1515,7 +1618,7 @@ export const AdminCmsView: React.FC = () => {
                   <button
                     key={st}
                     onClick={() => setFeedbackStatusFilter(st)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
                       feedbackStatusFilter === st
                         ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
                         : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -1531,8 +1634,8 @@ export const AdminCmsView: React.FC = () => {
             </div>
 
             {/* Type Filter Chips */}
-            <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-slate-100 dark:border-slate-800">
-              <span className="text-xs text-slate-400 font-medium mr-1">Turi:</span>
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-thin py-1 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <span className="text-xs text-slate-400 font-medium mr-1 shrink-0">Turi:</span>
               {[
                 { id: 'all', label: 'Barchasi' },
                 { id: 'suggestion', label: '💡 Taklif' },
@@ -1545,7 +1648,7 @@ export const AdminCmsView: React.FC = () => {
                 <button
                   key={t.id}
                   onClick={() => setFeedbackTypeFilter(t.id as any)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all shrink-0 whitespace-nowrap cursor-pointer ${
                     feedbackTypeFilter === t.id
                       ? 'bg-indigo-600 text-white shadow-sm'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -2231,170 +2334,28 @@ export const AdminCmsView: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: MANAGE COURSE LESSONS                                              */}
+      {/* MODAL: MANAGE COURSE LESSONS & MEDIA (VIDEO, PDF, IMAGE, ATTACHMENTS)     */}
       {/* ========================================================================= */}
       {managingCourseLessons && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 max-w-xl w-full rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div>
-                <h3 className="font-bold text-base text-slate-900 dark:text-white">
-                  Darslar Mundarijasi
-                </h3>
-                <p className="text-xs text-slate-500 font-mono">
-                  {managingCourseLessons.title}
-                </p>
-              </div>
-              <button
-                onClick={() => setManagingCourseLessons(null)}
-                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Add Lesson Form */}
-            <form onSubmit={handleAddLesson} className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700">
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                Yangi dars qo'shish (Bunny.net Video Stream qo'llab-quvvatlanadi)
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  required
-                  value={newLessonTitle}
-                  onChange={(e) => setNewLessonTitle(e.target.value)}
-                  placeholder="Dars mavzusi..."
-                  className="sm:col-span-2 px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                />
-                <input
-                  type="text"
-                  value={newLessonDuration}
-                  onChange={(e) => setNewLessonDuration(e.target.value)}
-                  placeholder="15 daqiqa"
-                  className="px-3 py-1.5 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  value={newLessonBunnyId}
-                  onChange={(e) => setNewLessonBunnyId(e.target.value)}
-                  placeholder="Bunny Video ID (7b34e2...)"
-                  className="px-3 py-1.5 rounded-lg text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                />
-                <input
-                  type="text"
-                  value={newLessonLibraryId}
-                  onChange={(e) => setNewLessonLibraryId(e.target.value)}
-                  placeholder="Bunny Library ID (384729)"
-                  className="px-3 py-1.5 rounded-lg text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all cursor-pointer shadow-sm"
-              >
-                Darsni Qo'shish
-              </button>
-            </form>
-
-            {/* Lessons List */}
-            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-              {managingCourseLessons.lessons.map((lesson, idx) => (
-                <div
-                  key={lesson.id}
-                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2"
-                >
-                  {editingLessonId === lesson.id ? (
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editingLessonTitle}
-                          onChange={(e) => setEditingLessonTitle(e.target.value)}
-                          className="flex-1 px-2.5 py-1 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
-                          placeholder="Dars nomi"
-                        />
-                        <input
-                          type="text"
-                          value={editingLessonDuration}
-                          onChange={(e) => setEditingLessonDuration(e.target.value)}
-                          className="w-24 px-2 py-1 rounded-lg text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
-                          placeholder="Vaqt"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={editingLessonBunnyId}
-                          onChange={(e) => setEditingLessonBunnyId(e.target.value)}
-                          className="flex-1 px-2.5 py-1 rounded-lg text-xs font-mono bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white"
-                          placeholder="Bunny Video ID"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleSaveEditLesson(managingCourseLessons.id, lesson.id)}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500 cursor-pointer"
-                        >
-                          Saqlash
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingLessonId(null)}
-                          className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs cursor-pointer"
-                        >
-                          Bekor
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2 text-xs min-w-0">
-                        <span className="w-5 h-5 shrink-0 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 font-bold flex items-center justify-center text-[10px]">
-                          {idx + 1}
-                        </span>
-                        <div className="truncate">
-                          <span className="font-semibold text-slate-800 dark:text-slate-200 block truncate">{lesson.title}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {lesson.duration} {lesson.bunnyVideoId ? `• Video: ${lesson.bunnyVideoId}` : ''}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => handleStartEditLesson(lesson)}
-                          className="p-1 rounded-md text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 cursor-pointer"
-                          title="Darsni tahrirlash"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            deleteLessonFromCourse(managingCourseLessons.id, lesson.id);
-                            setManagingCourseLessons((prev) =>
-                              prev
-                                ? { ...prev, lessons: prev.lessons.filter((l) => l.id !== lesson.id) }
-                                : null
-                            );
-                          }}
-                          className="p-1 rounded-md text-slate-400 hover:bg-rose-100 hover:text-rose-600 cursor-pointer"
-                          title="Darsni o'chirish"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-
-          </div>
-        </div>
+        <LessonManagerModal
+          course={courses.find((c) => c.id === managingCourseLessons.id) || managingCourseLessons}
+          onClose={() => setManagingCourseLessons(null)}
+          onAddLesson={(courseId, lesson) => {
+            addLessonToCourse(courseId, lesson);
+            const updated = courses.find((c) => c.id === courseId);
+            if (updated) setManagingCourseLessons({ ...updated });
+          }}
+          onUpdateLesson={(courseId, lessonId, updates) => {
+            updateLessonInCourse(courseId, lessonId, updates);
+            const updated = courses.find((c) => c.id === courseId);
+            if (updated) setManagingCourseLessons({ ...updated });
+          }}
+          onDeleteLesson={(courseId, lessonId) => {
+            deleteLessonFromCourse(courseId, lessonId);
+            const updated = courses.find((c) => c.id === courseId);
+            if (updated) setManagingCourseLessons({ ...updated });
+          }}
+        />
       )}
 
       {/* ========================================================================= */}

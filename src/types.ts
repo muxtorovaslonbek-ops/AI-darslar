@@ -16,6 +16,15 @@ export interface User {
   bio?: string;
 }
 
+export interface LessonAttachment {
+  id: string;
+  name: string;
+  type: 'pdf' | 'image' | 'video' | 'file';
+  url: string;
+  size?: string;
+  uploadedAt?: string;
+}
+
 export interface Lesson {
   id: string;
   title: string;
@@ -23,6 +32,14 @@ export interface Lesson {
   isCompleted?: boolean;
   bunnyVideoId?: string;
   libraryId?: string;
+  videoUrl?: string;
+  videoName?: string;
+  videoType?: 'direct' | 'bunny' | 'embed';
+  pdfUrl?: string;
+  pdfName?: string;
+  imageUrl?: string;
+  imageName?: string;
+  attachments?: LessonAttachment[];
   description?: string;
   courseName?: string;
 }
@@ -39,6 +56,7 @@ export interface Course {
   description: string;
   instructor: string;
   thumbnail: string;
+  introVideoUrl?: string;
   lessons: Lesson[];
   status: 'active' | 'draft';
 }
@@ -49,6 +67,11 @@ export interface QuizQuestion {
   options: string[];
   correctIndex: number;
   explanation: string;
+  imageUrl?: string;
+  imageName?: string;
+  videoUrl?: string;
+  videoName?: string;
+  points?: number;
 }
 
 export interface Quiz {
@@ -59,6 +82,8 @@ export interface Quiz {
   durationMinutes: number;
   difficulty: 'Oson' | 'O\'rtacha' | 'Qiyin';
   description: string;
+  passingScore?: number;
+  thumbnail?: string;
   questions: QuizQuestion[];
 }
 

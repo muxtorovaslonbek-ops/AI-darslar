@@ -27,6 +27,10 @@ interface CourseContextType {
   addQuestionToQuiz: (quizId: string, question: Omit<QuizQuestion, 'id'>) => void;
   updateQuestionInQuiz: (quizId: string, questionId: string, updates: Partial<QuizQuestion>) => void;
   deleteQuestionFromQuiz: (quizId: string, questionId: string) => void;
+  selectedCourseId: string | null;
+  setSelectedCourseId: (id: string | null) => void;
+  selectedQuizId: string | null;
+  setSelectedQuizId: (id: string | null) => void;
   clearAllCourses: () => void;
   clearAllQuizzes: () => void;
 }
@@ -34,6 +38,8 @@ interface CourseContextType {
 const CourseContext = createContext<CourseContextType | undefined>(undefined);
 
 export function CourseProvider({ children }: { children: React.ReactNode }) {
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
   const [courses, setCourses] = useState<Course[]>(() => {
     const version = localStorage.getItem('eduplatform-courses-version');
     if (version !== 'v3') {
@@ -292,6 +298,10 @@ export function CourseProvider({ children }: { children: React.ReactNode }) {
         addQuestionToQuiz,
         updateQuestionInQuiz,
         deleteQuestionFromQuiz,
+        selectedCourseId,
+        setSelectedCourseId,
+        selectedQuizId,
+        setSelectedQuizId,
         clearAllCourses,
         clearAllQuizzes,
       }}

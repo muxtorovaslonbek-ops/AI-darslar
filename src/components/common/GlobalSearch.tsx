@@ -238,26 +238,20 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Qidiruv: kurslar, darslar, testlar..."
-          className="w-full pl-9.5 pr-14 py-2 text-xs md:text-sm rounded-xl bg-slate-100/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
+          className="w-full pl-9.5 pr-8 py-2 text-xs md:text-sm rounded-xl bg-slate-100/90 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-transparent focus:border-indigo-500 dark:focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-inner"
         />
 
-        {query ? (
+        {query && (
           <button
             type="button"
             onClick={() => {
               setQuery('');
               inputRef.current?.focus();
             }}
-            className="absolute right-3 p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            className="absolute right-2.5 p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
           </button>
-        ) : (
-          <div className="absolute right-2.5 hidden sm:flex items-center pointer-events-none">
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono font-medium rounded bg-slate-200/80 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-300/60 dark:border-slate-600">
-              ⌘K
-            </kbd>
-          </div>
         )}
       </div>
 
