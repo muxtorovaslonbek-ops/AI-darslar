@@ -43,6 +43,7 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
   const [duration, setDuration] = useState('20 daqiqa');
   const [description, setDescription] = useState('');
   const [bunnyVideoId, setBunnyVideoId] = useState('');
+    const [libraryId, setLibraryId] = useState('');
 
   // Uploaded media states
   const [videoUrl, setVideoUrl] = useState('');
