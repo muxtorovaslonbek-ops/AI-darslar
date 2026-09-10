@@ -40,7 +40,7 @@ interface AuthContextType {
   loginWithGmail: (gmail: string, fullName?: string, phone?: string) => Promise<boolean>;
   loginWithTelegram: (telegramHandle: string, fullName?: string, phone?: string) => Promise<boolean>;
   loginAsAdmin: () => boolean;
-  loginAsAdminWithCredentials: (loginInput: string, passwordInput: string) => { success: boolean; error?: string };
+  loginAsAdminWithCredentials: (loginInput: string, passwordInput: string) => Promise<{ success: boolean; error?: string }>;
   register: (
     firstName: string,
     lastName: string,
@@ -95,6 +95,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('aifuture-current-user-id');
     return saved || null;
   });
+
+  // Har bir foydalanuvchi (Telegram, oddiy login, admin va h.k.) uchun Supabase'da
+  // HAQIQIY sessiya (auth.uid()) borligini ta'minlaydi. Agar allaqachon sessiya
+  // bo'lsa, o'shani qaytaradi; bo'lmasa, anonim sessiya ochadi. Bu — Supabase
+  // RLS qoidalarini `auth.uid() = id` asosida xavfsiz qattiqlashtirish imkonini beradi,
+  // shu bilan birga ilovaning o'ziga xos (Telegram/login-parol) kirish tajribasini saqlaydi.
+  const ensureSupabaseSession = useCallback(async (): Promise<string | null> => {
+    if (!isSupabaseConfigured) return null;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session?.user) {
+        return sessionData.session.user.id;
+      }
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        console.warn('Supabase anonim sessiya ochishda xatolik:', error.message);
+        return null;
+      }
+      return data.user?.id || null;
+    } catch (err) {
+      console.warn('ensureSupabaseSession xatosi:', err);
+      return null;
+    }
+  }, []);
 
   // Sync users with Supabase on mount if configured
   const refreshUsers = useCallback(async () => {
@@ -363,12 +387,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let user = users.find((u) => u.email?.toLowerCase() === cleanEmail);
 
     if (!user) {
+      // OAuth ishlamagan holatda ham haqiqiy (anonim) Supabase sessiyasi ochamiz.
+      const sessionId = await ensureSupabaseSession();
       const parts = (fullName || 'Google Foydalanuvchisi').trim().split(' ');
       const fName = parts[0] || 'Google';
       const lName = parts.slice(1).join(' ') || 'Foydalanuvchisi';
       const isAdmin = cleanEmail === 'muxtorovaslonbek@gmail.com';
       const newUser: User = {
-        id: `user-${Date.now()}`,
+        id: sessionId || `user-${Date.now()}`,
         firstName: fName,
         lastName: lName,
         phoneNumber: phone || '+998 90 000 00 00',
@@ -403,11 +429,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (!user) {
+      // Haqiqiy Supabase sessiyasi (anonim) ochamiz — shunda profil id'si
+      // auth.uid() bilan mos keladi va RLS xavfsiz ishlaydi.
+      const sessionId = await ensureSupabaseSession();
       const parts = (fullName || cleanHandle || 'Telegram').trim().split(' ');
       const fName = parts[0] || `@${cleanHandle}`;
       const lName = parts.slice(1).join(' ') || 'Foydalanuvchisi';
       const newUser: User = {
-        id: `user-${Date.now()}`,
+        id: sessionId || `user-${Date.now()}`,
         firstName: fName,
         lastName: lName,
         phoneNumber: phone || '+998 90 000 00 00',
@@ -467,6 +496,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.warn('Supabase signUp notice:', err);
       }
+    } else if (isSupabaseConfigured) {
+      // Telefon/Gmail/Telegram orqali ro'yxatdan o'tishda ham haqiqiy
+      // Supabase sessiyasi (anonim) ochamiz — RLS'ni auth.uid() bilan ishlatish uchun.
+      const sessionId = await ensureSupabaseSession();
+      if (sessionId) {
+        generatedId = sessionId;
+      }
     }
 
     const newUser: User = {
@@ -510,10 +546,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
-  const loginAsAdminWithCredentials = (
+  const loginAsAdminWithCredentials = async (
     loginInput: string,
     passwordInput: string
-  ): { success: boolean; error?: string } => {
+  ): Promise<{ success: boolean; error?: string }> => {
     const cleanLogin = loginInput.trim().toLowerCase();
     const cleanPass = passwordInput.trim();
 
@@ -529,8 +565,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
+    // Haqiqiy Supabase Auth sessiyasi ochamiz, shunda admin profili ham
+    // auth.uid() bilan bog'langan bo'ladi va RLS xavfsiz ishlaydi.
+    // Agar bu email bilan hisob hali mavjud bo'lmasa, birinchi kirishda avtomatik yaratiladi.
+    let adminAuthId: string | null = null;
+    if (isSupabaseConfigured) {
+      try {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: 'muxtorovaslonbek@gmail.com',
+          password: cleanPass,
+        });
+        if (!signInError && signInData?.user?.id) {
+          adminAuthId = signInData.user.id;
+        } else {
+          // Hisob hali yo'q bo'lishi mumkin — birinchi marta yaratamiz
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email: 'muxtorovaslonbek@gmail.com',
+            password: cleanPass,
+          });
+          if (!signUpError && signUpData?.user?.id) {
+            adminAuthId = signUpData.user.id;
+          } else if (signUpError) {
+            console.warn('Admin Supabase signUp note:', signUpError.message);
+          }
+        }
+      } catch (err) {
+        console.warn('Admin Supabase auth note:', err);
+      }
+    }
+
     const adminUser: User = {
-      id: 'admin-aslonbek',
+      id: adminAuthId || 'admin-aslonbek',
       firstName: 'Aslonbek',
       lastName: 'Muxtorov',
       phoneNumber: '+998 90 123 45 67',
@@ -545,6 +610,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUsers((prev) => [adminUser, ...prev.filter((u) => u.id !== adminUser.id && u.role !== 'admin')]);
     setCurrentUserId(adminUser.id);
+    upsertSupabaseProfile(adminUser);
     upsertFirebaseUserProfile(adminUser).catch(() => {});
     return { success: true };
   };
