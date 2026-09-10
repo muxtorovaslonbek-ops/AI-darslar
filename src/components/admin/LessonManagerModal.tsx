@@ -43,7 +43,7 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
   const [duration, setDuration] = useState('20 daqiqa');
   const [description, setDescription] = useState('');
   const [bunnyVideoId, setBunnyVideoId] = useState('');
-    const [libraryId, setLibraryId] = useState('');
+  const [libraryId, setLibraryId] = useState('');
 
   // Uploaded media states
   const [videoUrl, setVideoUrl] = useState('');
@@ -72,6 +72,7 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
     setDuration('20 daqiqa');
     setDescription('');
     setBunnyVideoId('');
+    setLibraryId('');
     setVideoUrl('');
     setVideoName('');
     setPdfUrl('');
@@ -94,6 +95,7 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
     setDuration(lesson.duration || '20 daqiqa');
     setDescription(lesson.description || '');
     setBunnyVideoId(lesson.bunnyVideoId || '');
+    setLibraryId(lesson.libraryId || '');
     setVideoUrl(lesson.videoUrl || '');
     setVideoName(lesson.videoName || '');
     setPdfUrl(lesson.pdfUrl || '');
@@ -192,6 +194,7 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
       duration: duration.trim() || '20 daqiqa',
       description: description.trim() || undefined,
       bunnyVideoId: bunnyVideoId.trim() || undefined,
+      libraryId: libraryId.trim() || undefined,
       videoUrl: videoUrl.trim() || undefined,
       videoName: videoName.trim() || undefined,
       videoType: videoUrl ? 'direct' : bunnyVideoId ? 'bunny' : undefined,
@@ -486,9 +489,19 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
                         type="text"
                         value={bunnyVideoId}
                         onChange={(e) => setBunnyVideoId(e.target.value)}
-                        placeholder="Yoki Bunny Video ID"
+                        placeholder="Bunny Video ID (GUID)"
                         className="w-full px-2.5 py-1.5 rounded-lg text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                       />
+                      <input
+                        type="text"
+                        value={libraryId}
+                        onChange={(e) => setLibraryId(e.target.value)}
+                        placeholder="Bunny Library ID (masalan: 384729)"
+                        className="w-full px-2.5 py-1.5 rounded-lg text-xs font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                      />
+                      <p className="text-[10px] text-indigo-500">
+                        Bunny Video ID kiritsangiz, Library ID'ni ham albatta to'ldiring — aks holda video topilmaydi (404).
+                      </p>
                     </div>
                   )}
                 </div>
@@ -512,7 +525,7 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
                   <input
                     type="file"
                     ref={pdfInputRef}
-                    accept="application/pdf,.pdf"
+                    accept="application/pdf"
                     onChange={handlePdfFileChange}
                     className="hidden"
                   />
@@ -529,10 +542,10 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
                     <p className="text-[10px] text-slate-400">Kitob, qo'llanma yoki konspekt (.pdf)</p>
                   </div>
 
-                  {/* PDF State or Direct URL */}
+                  {/* PDF URL or Preview */}
                   {pdfUrl ? (
-                    <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
                         <span className="font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[150px]">
                           {pdfName || 'Darslik_Qo\'llanmasi.pdf'}
                         </span>
@@ -547,7 +560,7 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
                           O'chirish
                         </button>
                       </div>
-                      <a
+                      
                         href={pdfUrl}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -577,7 +590,7 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
                 {/* 3. RASM / SXEMA YUKLASH */}
                 <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/40 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
+                                        <span className="text-xs font-bold text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
                       <ImageIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>Rasm / Sxema</span>
                     </span>
