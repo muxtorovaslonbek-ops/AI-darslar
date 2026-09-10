@@ -222,35 +222,90 @@ export async function fetchSupabaseCourses(): Promise<Course[] | null> {
 }
 
 // Profil rasmini (Avatar) Supabase Storage'ga yuklash
+// MUHIM: base64'ga tushib qolish endi qilinmaydi — chunki:
+//  1) uzun base64 satr Firestore'dagi avatarUrl uzunlik chegarasidan (500) oshib ketadi
+//     va yozuv sokin (silently) rad etiladi;
+//  2) F5'dan keyin ham muammo qaytarilaveradi.
+// Shu sababli xatolik bo'lsa, aniq xato qaytariladi va foydalanuvchiga ko'rsatiladi.
 export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  if (!isSupabaseConfigured) {
+    throw new Error("Supabase ulanmagan — profil rasmini saqlab bo'lmadi.");
+  }
+
+  const fileExt = file.name.split('.').pop() || 'jpg';
+  const filePath = `${userId}/${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('avatars')
+    .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
+
+  if (uploadError) {
+    console.warn('Supabase storage upload error:', uploadError.message);
+    throw new Error(
+      `Rasmni Supabase Storage'ga yuklab bo'lmadi: ${uploadError.message}. "avatars" bucket mavjudligini va ruxsatlarini tekshiring.`
+    );
+  }
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+  if (!data?.publicUrl) {
+    throw new Error("Rasm yuklandi, lekin ochiq havola (public URL) olinmadi.");
+  }
+
+  return data.publicUrl;
+}
+
+// Dars materiallarini (video, pdf, rasm, qo'shimcha fayllar) Supabase Storage'ga yuklash
+// folder: 'videos' | 'pdfs' | 'images' | 'attachments' — bucket ichidagi papka nomi
+export async function uploadLessonMedia(
+  file: File,
+  folder: 'videos' | 'pdfs' | 'images' | 'attachments'
+): Promise<{ url: string; usedFallback: boolean; error?: string }> {
   if (isSupabaseConfigured) {
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${userId}/${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileExt = file.name.split('.').pop() || 'bin';
+      const safeBase = file.name
+        .replace(/\.[^/.]+$/, '')
+        .replace(/[^a-zA-Z0-9-_]/g, '_')
+        .slice(0, 60);
+      const filePath = `${folder}/${Date.now()}-${Math.random().toString(36).substring(2, 8)}-${safeBase}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .from('lesson-media')
+        .upload(filePath, file, { upsert: true, contentType: file.type || undefined });
 
       if (!uploadError) {
-        const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        const { data } = supabase.storage.from('lesson-media').getPublicUrl(filePath);
         if (data?.publicUrl) {
-          return data.publicUrl;
+          return { url: data.publicUrl, usedFallback: false };
         }
       } else {
-        console.warn('Supabase storage upload error:', uploadError.message);
+        console.warn('Supabase lesson-media upload error:', uploadError.message);
+        // Katta fayllar (video kabi) uchun base64 fallback ishlamaydi va foydalanuvchiga
+        // aniq xato ko'rsatish kerak, aks holda F5'da fayl yana yo'qoladi.
+        return { url: '', usedFallback: false, error: uploadError.message };
       }
     } catch (e) {
-      console.warn('Supabase storage upload exception:', e);
+      const message = e instanceof Error ? e.message : String(e);
+      console.warn('Supabase lesson-media upload exception:', message);
+      return { url: '', usedFallback: false, error: message };
     }
   }
 
-  // Graceful local base64 fallback agar Supabase storage bucket ulanmagan bo'lsa
-  return new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      resolve(reader.result as string);
+  // Supabase umuman ulanmagan bo'lsa: kichik fayllar uchun base64'ga tushiramiz,
+  // katta fayllar uchun (>3MB) xato qaytaramiz, chunki base64 F5'da ishlamaydi va
+  // localStorage/DB'ga sig'maydi.
+  if (file.size > 3 * 1024 * 1024) {
+    return {
+      url: '',
+      usedFallback: false,
+      error: "Supabase ulanmagan va fayl hajmi katta — yuklab bo'lmadi.",
     };
+  }
+
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve({ url: reader.result as string, usedFallback: true });
+    reader.onerror = () => resolve({ url: '', usedFallback: false, error: 'Faylni o\'qib bo\'lmadi.' });
     reader.readAsDataURL(file);
   });
 }
