@@ -560,7 +560,7 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
                           O'chirish
                         </button>
                       </div>
-                      
+                      <a
                         href={pdfUrl}
                         target="_blank"
                         rel="noopener noreferrer"
