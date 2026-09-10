@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Course, Lesson, LessonAttachment } from '../../types';
-import { saveMediaFile, formatFileSize } from '../../lib/mediaStorage';
+import { uploadLessonMedia } from '../../lib/supabase';
+import { formatFileSize, getFileType } from '../../lib/mediaStorage';
 import {
   X,
   Plus,
@@ -60,6 +61,13 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingAttachment, setIsUploadingAttachment] = useState(false);
 
+  // Yuklash xatolari — F5'dan keyin fayl yo'qolib qolmasligi uchun,
+  // muvaffaqiyatsiz yuklashni foydalanuvchiga aniq ko'rsatamiz.
+  const [videoError, setVideoError] = useState('');
+  const [pdfError, setPdfError] = useState('');
+  const [imageError, setImageError] = useState('');
+  const [attachmentError, setAttachmentError] = useState('');
+
   // Hidden file inputs
   const videoInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +89,10 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
     setImageName('');
     setAttachments([]);
     setEditingLessonId(null);
+    setVideoError('');
+    setPdfError('');
+    setImageError('');
+    setAttachmentError('');
   };
 
   const handleStartCreate = () => {
@@ -106,18 +118,24 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
     setMode('edit');
   };
 
-  // Video Upload Handler
+  // Video Upload Handler — endi to'g'ridan-to'g'ri Supabase Storage'ga yuklanadi
   const handleVideoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsUploadingVideo(true);
+    setVideoError('');
     try {
-      const stored = await saveMediaFile(file);
-      setVideoUrl(stored.url);
-      setVideoName(file.name);
+      const result = await uploadLessonMedia(file, 'videos');
+      if (result.error || !result.url) {
+        setVideoError(result.error || "Video yuklashda xatolik yuz berdi.");
+      } else {
+        setVideoUrl(result.url);
+        setVideoName(file.name);
+      }
     } catch (err) {
-      console.error('Failed to store video:', err);
+      console.error('Failed to upload video:', err);
+      setVideoError("Video yuklashda kutilmagan xatolik yuz berdi.");
     } finally {
       setIsUploadingVideo(false);
       if (videoInputRef.current) videoInputRef.current.value = '';
@@ -130,12 +148,18 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
     if (!file) return;
 
     setIsUploadingPdf(true);
+    setPdfError('');
     try {
-      const stored = await saveMediaFile(file);
-      setPdfUrl(stored.url);
-      setPdfName(file.name);
+      const result = await uploadLessonMedia(file, 'pdfs');
+      if (result.error || !result.url) {
+        setPdfError(result.error || "PDF yuklashda xatolik yuz berdi.");
+      } else {
+        setPdfUrl(result.url);
+        setPdfName(file.name);
+      }
     } catch (err) {
-      console.error('Failed to store PDF:', err);
+      console.error('Failed to upload PDF:', err);
+      setPdfError("PDF yuklashda kutilmagan xatolik yuz berdi.");
     } finally {
       setIsUploadingPdf(false);
       if (pdfInputRef.current) pdfInputRef.current.value = '';
@@ -148,12 +172,18 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
     if (!file) return;
 
     setIsUploadingImage(true);
+    setImageError('');
     try {
-      const stored = await saveMediaFile(file);
-      setImageUrl(stored.url);
-      setImageName(file.name);
+      const result = await uploadLessonMedia(file, 'images');
+      if (result.error || !result.url) {
+        setImageError(result.error || "Rasm yuklashda xatolik yuz berdi.");
+      } else {
+        setImageUrl(result.url);
+        setImageName(file.name);
+      }
     } catch (err) {
-      console.error('Failed to store image:', err);
+      console.error('Failed to upload image:', err);
+      setImageError("Rasm yuklashda kutilmagan xatolik yuz berdi.");
     } finally {
       setIsUploadingImage(false);
       if (imageInputRef.current) imageInputRef.current.value = '';
@@ -166,19 +196,25 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
     if (!file) return;
 
     setIsUploadingAttachment(true);
+    setAttachmentError('');
     try {
-      const stored = await saveMediaFile(file);
-      const newAtt: LessonAttachment = {
-        id: stored.id,
-        name: file.name,
-        type: stored.type,
-        url: stored.url,
-        size: stored.sizeFormatted,
-        uploadedAt: new Date().toLocaleDateString('uz-UZ'),
-      };
-      setAttachments((prev) => [...prev, newAtt]);
+      const result = await uploadLessonMedia(file, 'attachments');
+      if (result.error || !result.url) {
+        setAttachmentError(result.error || "Fayl yuklashda xatolik yuz berdi.");
+      } else {
+        const newAtt: LessonAttachment = {
+          id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          name: file.name,
+          type: getFileType(file.type, file.name),
+          url: result.url,
+          size: formatFileSize(file.size),
+          uploadedAt: new Date().toLocaleDateString('uz-UZ'),
+        };
+        setAttachments((prev) => [...prev, newAtt]);
+      }
     } catch (err) {
-      console.error('Failed to store attachment:', err);
+      console.error('Failed to upload attachment:', err);
+      setAttachmentError("Fayl yuklashda kutilmagan xatolik yuz berdi.");
     } finally {
       setIsUploadingAttachment(false);
       if (attachmentInputRef.current) attachmentInputRef.current.value = '';
@@ -455,6 +491,10 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
                     <p className="text-[10px] text-slate-400">Kompyuterdan to'g'ridan-to'g'ri yuklash</p>
                   </div>
 
+                  {videoError && (
+                    <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium px-1">⚠️ {videoError}</p>
+                  )}
+
                   {/* Video URL or Preview */}
                   {videoUrl ? (
                     <div className="space-y-1.5">
@@ -542,6 +582,10 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
                     <p className="text-[10px] text-slate-400">Kitob, qo'llanma yoki konspekt (.pdf)</p>
                   </div>
 
+                  {pdfError && (
+                    <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium px-1">⚠️ {pdfError}</p>
+                  )}
+
                   {/* PDF URL or Preview */}
                   {pdfUrl ? (
                     <div className="space-y-1.5">
@@ -623,6 +667,10 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
                     <p className="text-[10px] text-slate-400">Infografika, slayd yoki sxema (.png, .jpg)</p>
                   </div>
 
+                  {imageError && (
+                    <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium px-1">⚠️ {imageError}</p>
+                  )}
+
                   {/* Image Preview or Direct URL */}
                   {imageUrl ? (
                     <div className="space-y-1.5">
@@ -678,9 +726,13 @@ export const LessonManagerModal: React.FC<LessonManagerModalProps> = ({
                     className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-100 transition cursor-pointer flex items-center gap-1"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Fayl qo'shish</span>
+                    <span>{isUploadingAttachment ? 'Yuklanmoqda...' : "Fayl qo'shish"}</span>
                   </button>
                 </div>
+
+                {attachmentError && (
+                  <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium px-1">⚠️ {attachmentError}</p>
+                )}
 
                 {attachments.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
