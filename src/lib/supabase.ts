@@ -135,6 +135,13 @@ export async function upsertSupabaseLesson(courseId: string, courseName: string,
       duration: lesson.duration,
       bunny_video_id: lesson.bunnyVideoId || '',
       library_id: lesson.libraryId || '',
+      video_url: lesson.videoUrl || null,
+      video_name: lesson.videoName || null,
+      pdf_url: lesson.pdfUrl || null,
+      pdf_name: lesson.pdfName || null,
+      image_url: lesson.imageUrl || null,
+      image_name: lesson.imageName || null,
+      attachments: lesson.attachments || [],
       updated_at: new Date().toISOString(),
     });
     return !error;
@@ -169,7 +176,14 @@ export async function fetchSupabaseCourses(): Promise<Course[] | null> {
           duration: l.duration || '15 daqiqa',
           isCompleted: false,
           bunnyVideoId: l.bunny_video_id || undefined,
-          libraryId: l.library_id || '384729',
+          libraryId: l.library_id || undefined,
+          videoUrl: l.video_url || undefined,
+          videoName: l.video_name || undefined,
+          pdfUrl: l.pdf_url || undefined,
+          pdfName: l.pdf_name || undefined,
+          imageUrl: l.image_url || undefined,
+          imageName: l.image_name || undefined,
+          attachments: l.attachments || undefined,
           description: l.description || '',
           courseName: c.title,
         }));
@@ -248,10 +262,12 @@ export async function updateUserProfile(
 ) {
   if (isSupabaseConfigured) {
     try {
+      // upsert: agar profil hali mavjud bo'lmasa yaratadi, mavjud bo'lsa yangilaydi.
+      // Oldingi .update() faqat yozuv mavjud bo'lgandagina ishlardi, aks holda
+      // hech narsa saqlanmasdi (jim xato).
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('id', userId)
+        .upsert({ id: userId, ...updates })
         .select()
         .single();
 
@@ -266,4 +282,3 @@ export async function updateUserProfile(
 
   return { id: userId, ...updates };
 }
-
