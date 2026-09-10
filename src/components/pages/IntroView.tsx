@@ -387,7 +387,7 @@ export const IntroView: React.FC<IntroViewProps> = ({
   };
 
   // ADMIN KIRISH
-  const handleAdminLoginSubmit = (e: React.FormEvent) => {
+  const handleAdminLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
     setAuthSuccess(null);
@@ -401,7 +401,7 @@ export const IntroView: React.FC<IntroViewProps> = ({
       return;
     }
 
-    const res = loginAsAdminWithCredentials(adminLogin.trim(), adminPassword.trim());
+    const res = await loginAsAdminWithCredentials(adminLogin.trim(), adminPassword.trim());
     if (res.success) {
       setAuthSuccess('Administrator sifatida muvaffaqiyatli kirdingiz!');
       setTimeout(() => {
